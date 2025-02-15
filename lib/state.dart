@@ -32,7 +32,7 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive>{
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints){
-        print('layout-biggest:${constraints.biggest}');
+        // print('layout-biggest:${constraints.biggest}');
         // print('layout-smallest:${constraints.smallest}');
         if(widget.responses.isNotEmpty){
           for(ResponsiveValueGroup group in widget.responses){
@@ -78,7 +78,7 @@ class KetchupUILayout extends StatelessWidget{
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: ((BuildContext context, BoxConstraints constraints){
-        print('layout-biggest:${constraints.biggest}');
+        // print('layout-biggest:${constraints.biggest}');
         // print('layout-smallest:${constraints.smallest}');
         return KetchupUISized(key: statefulKey,
           model: model,
@@ -171,6 +171,7 @@ class KetchupUIState extends State<KetchupUISized>{
             ),
             child: Stack(
               children: []
+                // ignore: prefer_spread_collections
                 ..addAll(widget.mode == RUNMODE.edit ? [
                   AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style: TextStyle(color: editModeColor?.darkenColor(0.8))),
                   // Text(extra ?? leafName, style: TextStyle(color: editModeColor?.darken(0.8), fontSize: 570),)
@@ -194,8 +195,8 @@ class KetchupUIState extends State<KetchupUISized>{
   }
 
   List<Widget> createFromScreenContextPatterns({ required String screenContextPattern }){
-    print('context render invoke(${++renderTimes})');
-    var retList;
+    // print('context render invoke(${++renderTimes})');
+    List<Widget> retList;
     if(screenContextPattern == KetchupModel.PT_FULLSCREEN){
       retList = [outsideRowExpandedAspectRatio( aspectRatio: model.fullscreenAspectRatioSize?.aspectRatio,
             child: Column(
@@ -246,7 +247,7 @@ class KetchupUIState extends State<KetchupUISized>{
   }
 
   List<Widget> createMultiRowSingleColumnChildren({required RCPair rowColumn, KetchupModel? core}){
-    print('render invoke(${++renderTimes})');
+    // print('render invoke(${++renderTimes})');
     singleColumnChildren.clear();
     singleColumnChildren.addAll(
       List.generate(rowColumn.column, (int cIndex)=>
@@ -284,7 +285,7 @@ class KetchupUIState extends State<KetchupUISized>{
   void _updateGKeyValueRecords(){
     model.gKeyMappedValues = model.gKeys.map<String, GKeyValueRecord>((debugName, gKey)=>MapEntry(debugName, (
             gKey, gKey.currentContext?.size, (gKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero))));
-    model.gKeyMappedValues.forEach((key, record)=>print('$key:${record.$2}:${record.$3}'));
+    // model.gKeyMappedValues.forEach((key, record)=>print('$key:${record.$2}:${record.$3}'));
   }
   // List<Widget> createSingleRowChildren({required int count, KetchupCore? core}){
   //   singleRowChildren.clear();
@@ -328,6 +329,7 @@ class KetchupUIState extends State<KetchupUISized>{
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: []
+                // ignore: prefer_spread_collections
                 ..addAll(widget.mode == RUNMODE.edit ? [
                     SizedBox(height: 20),
                     Container(
@@ -362,7 +364,7 @@ class KetchupUIState extends State<KetchupUISized>{
   @override
   void initState() {
     super.initState();
-    print('initState:$hashCode');
+    // print('initState:$hashCode');
     renderTimes = 0;
     size = widget.size;
     
@@ -371,7 +373,7 @@ class KetchupUIState extends State<KetchupUISized>{
   @override
   void dispose() {
     super.dispose();
-    print('dispose:$hashCode');
+    // print('dispose:$hashCode');
   }
 }
 

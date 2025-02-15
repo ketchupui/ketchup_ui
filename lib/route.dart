@@ -6,6 +6,7 @@ import 'state.dart';
 
 typedef MatchGroup = (int weight, String? screenPT, String? contextPT);
 
+// ignore: must_be_immutable
 class KetchupRoute extends GoRoute{
   List<MatchGroup>? screenContextMatches;
   KetchupRoute({required super.path, super.builder, super.pageBuilder, required this.screenContextMatches});
@@ -53,15 +54,6 @@ class _KetchupResponsiveMatchRouteSettingState extends State<KetchupResponsiveMa
   void initState() {
     super.initState();
     
-  }
-  
-}
-
-class KetchupRoutesUI extends StatelessWidget{
-  @override
-  Widget build(BuildContext context) {
-    // TODO: implement build
-    throw UnimplementedError();
   }
   
 }
