@@ -172,7 +172,7 @@ class KetchupUIState extends State<KetchupUISized>{
             child: Stack(
               children: []
                 ..addAll(widget.mode == RUNMODE.edit ? [
-                  AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style: TextStyle(color: editModeColor?.darkenColor())),
+                  AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style: TextStyle(color: editModeColor?.darkenColor(0.8))),
                   // Text(extra ?? leafName, style: TextStyle(color: editModeColor?.darken(0.8), fontSize: 570),)
                 ]:[])
                 ..addAll(

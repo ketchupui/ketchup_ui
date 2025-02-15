@@ -1,39 +1,20 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# 番茄酱 UI
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+拼接屏应用UI和类TV交互的基础类库，一款支持拼接屏语义感知的底层画布，让软件应用从设计阶段就适配大屏拼接屏使用场景。
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+注意，软件使用 [AGPL v3开源协议](/LICENSE), 在您的生态代码中开源基于此协议开发的商业代码。或者联系作者 jackyanjiaqi@gmail.com 或者 vx：DigitalSpriteJack 购买商业闭源许可。
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+## 路线图
 
-## Features
+- 0.0.1 支持多屏语境和交互预设 ✅
+- 0.0.2 支持网格线语境+分层的 Widget画板
+- 0.0.3 支持自定义网格线语境(支持骑行日记的骑行视角渲染)
+- ...
+- 0.0.8 支持拼画模式
+- 1.0.0 能够完整支持 Ketchup-Editor 发布
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+# 番茄酱 Editor
 
-## Getting started
+编辑器项目用于开发大屏拼接屏游戏，目前正在规划开发中，Editor项目商业运营且不开源，欢迎有大屏开发需求的单位提出定制开发需求。
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
-```
-
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+您也可以基于 Ketchup-UI 项目开发自己的 Editor 项目，但是 Ketchup-UI 基于 [AGPL v3开源协议](/LICENSE) 开源许可的限制，您必须使用同一许可证来开源该 Editor 项目，否则会有法律风险。  

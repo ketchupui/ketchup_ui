@@ -1,3 +1,5 @@
 ## 0.0.1
 
-* TODO: Describe initial release.
+* 初始提交
+* 支持三、四、五联屏语境的预览。
+* 支持交互预设。
