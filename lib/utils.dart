@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/painting.dart';
+import 'package:flutter/foundation.dart';
+
 
 extension ColorExtension on Color {
   
@@ -41,5 +43,11 @@ extension ColorExtension on Color {
           clampDouble(hsl.lightness + (1 - hsl.lightness) * amount, 0.0, 1.0),
         )
         .toColor();
+  }
+}
+
+void ketchupDebug(Object? object){
+  if(kDebugMode){
+    print(object);
   }
 }
