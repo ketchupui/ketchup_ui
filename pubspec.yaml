@@ -3,7 +3,6 @@ description: "番茄汁UI,基于拼接大屏生态的基础类库"
 version: 0.0.2
 homepage: https://ketchupui.github.io
 repository: https://github.com/ketchupui/ketchup_ui
-publisher: jackyanjiaqi@gmail.com
 
 environment:
   sdk: ^3.6.0
