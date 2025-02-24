@@ -1,29 +1,45 @@
 import 'dart:ui';
-
-Color darkenColor(Color color, double factor) {
-  int r = (color.r * factor).toInt();
-  int g = (color.g * factor).toInt();
-  int b = (color.b * factor).toInt();
-
-  // 确保每个分量不小于0
-  r = r < 0 ? 0 : r;
-  g = g < 0 ? 0 : g;
-  b = b < 0 ? 0 : b;
-
-  return Color.fromRGBO(r, g, b, color.a);
-}
+import 'package:flutter/painting.dart';
 
 extension ColorExtension on Color {
-  Color darkenColor(double factor) {
-    int r = (this.r * factor).toInt();
-    int g = (this.g * factor).toInt();
-    int b = (this.b * factor).toInt();
+  
+  Color blacken(double amount){
+    assert(amount >= 0 && amount <= 1);
+    return whiten(1 - amount);      
+  }
 
-    // 确保每个分量不小于0
-    r = r < 0 ? 0 : r;
-    g = g < 0 ? 0 : g;
-    b = b < 0 ? 0 : b;
+  Color whiten(double amount) {
+    assert(amount >= 0 && amount <= 1);
+    double r = clampDouble(this.r * amount, 0.0, 1.0);
+    double g = clampDouble(this.g * amount, 0.0, 1.0);
+    double b = clampDouble(this.b * amount, 0.0, 1.0);
+    return Color.from(red:r, green:g, blue:b, alpha: a);
+  }
 
-    return Color.fromRGBO(r, g, b, a);
+  Color darken(double amount) {
+    assert(amount >= 0 && amount <= 1);
+
+    final hsl = HSLColor.fromColor(this);
+    return hsl
+        .withLightness(
+          clampDouble(hsl.lightness * amount, 0.0, 1.0),
+        )
+        .toColor();
+  }
+
+  /// Brighten the shade of the color by the [amount].
+  ///
+  /// [amount] is a double between 0 and 1.
+  ///
+  /// Based on: https://stackoverflow.com/a/60191441.
+  Color brighten(double amount) {
+    assert(amount >= 0 && amount <= 1);
+
+    final hsl = HSLColor.fromColor(this);
+    return hsl
+        .withLightness(
+          clampDouble(hsl.lightness + (1 - hsl.lightness) * amount, 0.0, 1.0),
+        )
+        .toColor();
   }
 }

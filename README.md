@@ -4,6 +4,15 @@
 
 注意，软件使用 [AGPL v3开源协议](/LICENSE), 在您的生态代码中开源基于此协议开发的商业代码。或者联系作者 jackyanjiaqi@gmail.com 或者 vx：DigitalSpriteJack 购买商业闭源许可。
 
+# 多屏适配DEMO效果
+
+![screen1_debug](/pic/screen1_debug.png)
+![screen2_debug](/pic/screen2_debug.png)
+![screen4_edit](/pic/screen4_edit.png)
+![screen4](/pic/screen4.png)
+![screen5_edit](/pic/screen5_edit.png)
+![screen5](/pic/screen5.png)
+
 ## 路线图
 
 - 0.0.1 支持多屏语境和交互预设 ✅

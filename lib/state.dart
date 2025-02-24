@@ -1,20 +1,25 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'model/screen.dart';
+import 'model/grid.dart';
+import 'ui/RightText.dart';
 import 'utils.dart';
-import 'model.dart';
+import 'painter/grid.dart';
 
 enum RUNMODE { runtime, edit, debug }
 
 typedef ResponsiveValueGroup = ({CATEGORY category, double fromExcludeSizeRatio, double toIncludeSizeRatio, RCPair rowColumn, Size? singleAspectRatio});
-typedef HandsetValueGroup = ({RCPair rowColumn, Size? singleAspectRatio, RUNMODE mode, KetchupModel model});
+typedef HandsetValueGroup = ({RCPair rowColumn, Size? singleAspectRatio, RUNMODE mode, ScreenContext screen, GridContext? grid});
 typedef ResponseAdaptiveCallback = HandsetValueGroup? Function({required ResponsiveValueGroup matched, required Size size});
+typedef WidgetsBuilder = List<Widget>? Function(BuildContext context, String? singlePT, String? contextPT);
 
 class KetchupUIResponsive extends StatefulWidget{
   final List<ResponsiveValueGroup> responses;
   final Key? ketchupKey;
   final HandsetValueGroup? init;
   final ResponseAdaptiveCallback? cb;
-  const KetchupUIResponsive({super.key, this.ketchupKey, required this.responses, this.cb, this.init});
+  final WidgetsBuilder? widgetsBuilder;
+  const KetchupUIResponsive({super.key, this.widgetsBuilder, this.ketchupKey, required this.responses, this.cb, this.init});
   @override
   State<StatefulWidget> createState()=> _KetchupUIResponsiveState();
 }
@@ -32,7 +37,7 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive>{
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints){
-        // print('layout-biggest:${constraints.biggest}');
+        print('layout-biggest:${constraints.biggest}');
         // print('layout-smallest:${constraints.smallest}');
         if(widget.responses.isNotEmpty){
           for(ResponsiveValueGroup group in widget.responses){
@@ -41,11 +46,13 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive>{
                 lastResponse = group;
                 var cbResult = widget.cb?.call(matched: group, size: constraints.biggest);
                 return KetchupUISized(key: widget.ketchupKey,
+                    widgetsBuilder: widget.widgetsBuilder,
                     rowColumn: cbResult?.rowColumn ?? widget.init?.rowColumn ?? group.rowColumn, 
                     singleAspectRatio: cbResult != null ? cbResult.singleAspectRatio : (widget.init != null ? widget.init!.singleAspectRatio : group.singleAspectRatio), 
                     size: constraints.biggest, 
                     mode: cbResult?.mode ?? widget.init?.mode ?? RUNMODE.debug, 
-                    model: cbResult?.model ?? widget.init?.model ?? KetchupModel.fromRVG(group));
+                    grid: cbResult?.grid ?? widget.init?.grid,
+                    screen: cbResult?.screen ?? widget.init?.screen ?? ScreenContext.fromRVG(group));
               }
               break;
             }
@@ -53,8 +60,9 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive>{
         }
         var init = widget.init;
         return init != null ? KetchupUISized(key: widget.ketchupKey, 
+          widgetsBuilder: widget.widgetsBuilder,
           rowColumn: init.rowColumn, singleAspectRatio: init.singleAspectRatio, 
-          size: constraints.biggest,mode: init.mode, model: init.model) : Container();
+          size: constraints.biggest,mode: init.mode, screen: init.screen, grid: init.grid) : Container();
     });
     
   }
@@ -66,11 +74,14 @@ class KetchupUILayout extends StatelessWidget{
   final RCPair rowColumn;
   final double gapspan;
   final RUNMODE mode;
-  final KetchupModel model;
+  final ScreenContext screen;
+  final GridContext? grid;
   final Key? statefulKey;
-  const KetchupUILayout({super.key, this.statefulKey, 
+  final WidgetsBuilder? widgetsBuilder;
+  const KetchupUILayout({super.key, this.statefulKey, this.widgetsBuilder,
     this.singleAspectRatio, this.gapspan = 0, 
-    required this.model, 
+    required this.screen, 
+    this.grid,
     this.mode = RUNMODE.debug,
     required this.rowColumn });
   
@@ -78,10 +89,12 @@ class KetchupUILayout extends StatelessWidget{
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: ((BuildContext context, BoxConstraints constraints){
-        // print('layout-biggest:${constraints.biggest}');
+        print('layout-biggest:${constraints.biggest}');
         // print('layout-smallest:${constraints.smallest}');
         return KetchupUISized(key: statefulKey,
-          model: model,
+          widgetsBuilder: widgetsBuilder,
+          screen: screen,
+          grid: grid,
           rowColumn: rowColumn, singleAspectRatio: singleAspectRatio, size: constraints.biggest, mode: mode);
       }));
   }
@@ -95,8 +108,15 @@ class KetchupUISized extends StatefulWidget{
   final Size size;
   final double gapspan;
   final RUNMODE mode;
-  final KetchupModel model;
-  const KetchupUISized({ super.key, this.singleAspectRatio, required this.rowColumn, required this.size, this.mode = RUNMODE.debug, this.gapspan = 0, required this.model });
+  final ScreenContext screen;
+  final GridContext? grid;
+  final WidgetsBuilder? widgetsBuilder;
+  const KetchupUISized({ super.key,
+    required this.rowColumn, 
+    required this.screen,
+    required this.size, 
+    this.widgetsBuilder, this.singleAspectRatio, 
+    this.mode = RUNMODE.debug, this.gapspan = 0, this.grid });
   
   @override
   State<StatefulWidget> createState() => KetchupUIState();
@@ -104,7 +124,9 @@ class KetchupUISized extends StatefulWidget{
 
 class KetchupUIState extends State<KetchupUISized>{
 
-  KetchupModel get model => widget.model;
+  ScreenContext get screen => widget.screen;
+  GridContext? get grid => widget.grid;
+
   Size? size;
   int renderTimes = 0;
   List<Widget> singleColumnChildren = [];
@@ -159,53 +181,68 @@ class KetchupUIState extends State<KetchupUISized>{
   //     child: null,);
   // }
 
-  Widget leafContainerWrapping({Key? key, Color? editModeColor, List<Widget>? children, required String leafName, Size? aspectRatio, String? extra}){
-    return Container(
+  Widget editModeGridWrapping({required Widget child}){
+    return grid != null && screen.mode != RUNMODE.runtime ? CustomPaint(foregroundPainter: GridPainter(context: grid! ), child: child,) : child;
+  }
+
+  Widget leafContainerWrapping({Key? key, Color? editModeColor, List<Widget>? children, required String leafName, Size? aspectRatio, String? extra, required BuildContext context}){
+    print('widgetsBuilder:${widget.widgetsBuilder}');
+    return editModeGridWrapping(child: Container(
             key: key,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: model.mode == RUNMODE.edit ? editModeColor : null,
-              border: model.mode != RUNMODE.runtime && editModeColor != null ? Border.all(color: editModeColor) : null,
+              color: screen.mode == RUNMODE.edit ? editModeColor : null,
+              border: screen.mode != RUNMODE.runtime && editModeColor != null ? Border.all(color: editModeColor) : null,
               // color: Colors.black,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Stack(
               children: []
-                // ignore: prefer_spread_collections
+                ..addAll(widget.widgetsBuilder?.call(context, extra ?? leafName, 
+                  (screen.currentPattern ?? switch(screen.column){2=>PT_SINGLE_TWO,3=>PT_SINGLE_THREE,4=>PT_SINGLE_FOUR,5=>PT_SINGLE_FIVE,_=>PT_SINGLEALL}) ) ?? [])
                 ..addAll(widget.mode == RUNMODE.edit ? [
-                  AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style: TextStyle(color: editModeColor?.darkenColor(0.8))),
+                  AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style:TextStyle(color: editModeColor?.darken(0.8))),
                   // Text(extra ?? leafName, style: TextStyle(color: editModeColor?.darken(0.8), fontSize: 570),)
                 ]:[])
+                // ..addAll(widget.mode == RUNMODE.edit && screen.gKeyMappedValues[leafName]?.$2 != null ? [
+                //   Container(
+                //     width: double.infinity,
+                //     height: double.infinity,
+                //     child: RepaintBoundary(
+                //       child: CustomPaint(painter: GridPainter(context: grid ?? GridContext()), size: screen.gKeyMappedValues[leafName]!.$2!),
+                //     )
+                //   )
+                // ]:[])
                 ..addAll(
-                  widget.mode != RUNMODE.runtime && model.gKeyMappedValues.containsKey(leafName) ? 
+                  widget.mode != RUNMODE.runtime && screen.gKeyMappedValues.containsKey(leafName) ? 
                   [Column(
                     children: [
-                      Text(model.gKeyMappedValues[leafName]!.$2.toString()),
+                      RightText(screen.gKeyMappedValues[leafName]!.$2.toString()),
                       aspectRatio != null ? 
-                      Text('aspectRadioSet ${aspectRatio.aspectRatio.toStringAsFixed(6)}(${aspectRatio.width} : ${aspectRatio.height})') : 
-                      Text('aspectRadioSet null'),
-                      Text('aspectRadioCal ${model.gKeyMappedValues[leafName]!.$2!.aspectRatio.toStringAsFixed(6)}'),
-                      Text('= 9.0 : ${(9.0 / model.gKeyMappedValues[leafName]!.$2!.aspectRatio).toStringAsFixed(2)} =16.0 : ${(16.0 / model.gKeyMappedValues[leafName]!.$2!.aspectRatio).toStringAsFixed(2)}'),
-                      Text(model.gKeyMappedValues[leafName]!.$3.toString()),
-                      // Text('size:${(core.gKeys[leafName]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero).toString()}')
+                      RightText('aspectRadioSet ${aspectRatio.aspectRatio.toStringAsFixed(6)}(${aspectRatio.width} : ${aspectRatio.height})') : 
+                      RightText('aspectRadioSet null'),
+                      RightText('aspectRadioCal ${screen.gKeyMappedValues[leafName]!.$2!.aspectRatio.toStringAsFixed(6)}'),
+                      RightText('= 9.0 : ${(9.0 / screen.gKeyMappedValues[leafName]!.$2!.aspectRatio).toStringAsFixed(2)} =16.0 : ${(16.0 / screen.gKeyMappedValues[leafName]!.$2!.aspectRatio).toStringAsFixed(2)}'),
+                      RightText(screen.gKeyMappedValues[leafName]!.$3.toString()),
+                      // RightText('size:${(core.gKeys[leafName]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero).toString()}')
                     ],
                   )] :[])
-                ..addAll(children ?? [])
-            ));
+            )));
   }
 
-  List<Widget> createFromScreenContextPatterns({ required String screenContextPattern }){
-    // print('context render invoke(${++renderTimes})');
-    List<Widget> retList;
-    if(screenContextPattern == KetchupModel.PT_FULLSCREEN){
-      retList = [outsideRowExpandedAspectRatio( aspectRatio: model.fullscreenAspectRatioSize?.aspectRatio,
+  List<Widget> createFromScreenContextPatterns({ required BuildContext context, required String screenContextPattern }){
+    print('context render invoke(${++renderTimes})');
+    var retList;
+    if(screenContextPattern == PT_FULLSCREEN){
+      retList = [outsideRowExpandedAspectRatio( aspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
             child: Column(
               children:[insideColumnExpandedAspectRatio(
-                aspectRatio: model.fullscreenAspectRatioSize?.aspectRatio,
+                aspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
                 child: leafContainerWrapping(
-                  key: model.gKeys.putIfAbsent(screenContextPattern, ()=>GlobalKey<KetchupUIState>(debugLabel: screenContextPattern)),
-                  aspectRatio: model.fullscreenAspectRatioSize,
-                  leafName: screenContextPattern, editModeColor: model.contextScreenColorMap[screenContextPattern]))]))];
+                  context: context,
+                  key: screen.gKeys.putIfAbsent(screenContextPattern, ()=>GlobalKey<KetchupUIState>(debugLabel: screenContextPattern)),
+                  aspectRatio: screen.fullscreenAspectRatioSize,
+                  leafName: screenContextPattern, editModeColor: screen.contextScreenColorMap[screenContextPattern]))]))];
       testNeedMeasure();
       return retList;
     }
@@ -230,10 +267,11 @@ class KetchupUIState extends State<KetchupUISized>{
                     flex: screencount,
                     aspectRatio: calculatedAspectRatio?.aspectRatio,
                     child:  leafContainerWrapping(
-                      key: model.gKeys.putIfAbsent(screenPattern, ()=>GlobalKey<KetchupUIState>(debugLabel: screenPattern)),
+                      context: context,
+                      key: screen.gKeys.putIfAbsent(screenPattern, ()=>GlobalKey<KetchupUIState>(debugLabel: screenPattern)),
                       aspectRatio: calculatedAspectRatio,
                       leafName: screenPattern,
-                      editModeColor: model.contextScreenColorMap[screenPattern],
+                      editModeColor: screen.contextScreenColorMap[screenPattern],
                   ));
                 }()
               ]));
@@ -246,8 +284,8 @@ class KetchupUIState extends State<KetchupUISized>{
     
   }
 
-  List<Widget> createMultiRowSingleColumnChildren({required RCPair rowColumn, KetchupModel? core}){
-    // print('render invoke(${++renderTimes})');
+  List<Widget> createMultiRowSingleColumnChildren({required BuildContext context, required RCPair rowColumn, ScreenContext? core}){
+    print('render invoke(${++renderTimes})');
     singleColumnChildren.clear();
     singleColumnChildren.addAll(
       List.generate(rowColumn.column, (int cIndex)=>
@@ -256,6 +294,7 @@ class KetchupUIState extends State<KetchupUISized>{
             children: List.generate(rowColumn.row, (int rIndex)=>insideColumnExpandedAspectRatio( aspectRatio: widget.singleAspectRatio?.aspectRatio,
               child: leafContainerWrapping(
                 key: core?.gKeys.putIfAbsent('single-$cIndex-$rIndex', ()=>GlobalKey<KetchupUIState>(debugLabel: 'single-$cIndex-$rIndex')),
+                context: context,
                 leafName: 'single-$cIndex-$rIndex',
                 extra: '${cIndex+1}',
                 aspectRatio: widget.singleAspectRatio,
@@ -272,7 +311,7 @@ class KetchupUIState extends State<KetchupUISized>{
   }
   
   void testNeedMeasure(){
-    if(model.isNeedMeasure || widget.size != size){
+    if(screen.isNeedMeasure || widget.size != size){
       size = widget.size;
       WidgetsBinding.instance.addPostFrameCallback((Duration dt){
           _updateGKeyValueRecords();
@@ -283,9 +322,9 @@ class KetchupUIState extends State<KetchupUISized>{
 
   /// 更新 GKey 测量信息
   void _updateGKeyValueRecords(){
-    model.gKeyMappedValues = model.gKeys.map<String, GKeyValueRecord>((debugName, gKey)=>MapEntry(debugName, (
+    screen.gKeyMappedValues = screen.gKeys.map<String, GKeyValueRecord>((debugName, gKey)=>MapEntry(debugName, (
             gKey, gKey.currentContext?.size, (gKey.currentContext?.findRenderObject() as RenderBox?)?.localToGlobal(Offset.zero))));
-    // model.gKeyMappedValues.forEach((key, record)=>print('$key:${record.$2}:${record.$3}'));
+    screen.gKeyMappedValues.forEach((key, record)=>print('$key:${record.$2}:${record.$3}'));
   }
   // List<Widget> createSingleRowChildren({required int count, KetchupCore? core}){
   //   singleRowChildren.clear();
@@ -329,7 +368,6 @@ class KetchupUIState extends State<KetchupUISized>{
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: []
-                // ignore: prefer_spread_collections
                 ..addAll(widget.mode == RUNMODE.edit ? [
                     SizedBox(height: 20),
                     Container(
@@ -347,11 +385,11 @@ class KetchupUIState extends State<KetchupUISized>{
                     height: double.infinity,
                     decoration: BoxDecoration(color: Colors.blueGrey), 
                     child: fullscreenAspectRatioRow(
-                      fullScreenAspectRatio: model.fullscreenAspectRatioSize?.aspectRatio,
+                      fullScreenAspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
                       child: Row(
-                        children: model.currentPattern == null ? 
-                          createMultiRowSingleColumnChildren(rowColumn: widget.rowColumn, core: model) :
-                          createFromScreenContextPatterns(screenContextPattern: model.currentPattern!)
+                        children: screen.currentPattern == null ? 
+                          createMultiRowSingleColumnChildren(context: context, rowColumn: widget.rowColumn, core: screen) :
+                          createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPattern!)
                     ))
                   )
                 ))
@@ -364,7 +402,7 @@ class KetchupUIState extends State<KetchupUISized>{
   @override
   void initState() {
     super.initState();
-    // print('initState:$hashCode');
+    print('initState:$hashCode');
     renderTimes = 0;
     size = widget.size;
     
@@ -373,7 +411,7 @@ class KetchupUIState extends State<KetchupUISized>{
   @override
   void dispose() {
     super.dispose();
-    // print('dispose:$hashCode');
+    print('dispose:$hashCode');
   }
 }
 

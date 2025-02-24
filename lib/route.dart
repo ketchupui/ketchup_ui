@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'model.dart';
+import 'model/screen.dart';
 import 'state.dart';
 
 typedef MatchGroup = (int weight, String? screenPT, String? contextPT);
 
-// ignore: must_be_immutable
 class KetchupRoute extends GoRoute{
   List<MatchGroup>? screenContextMatches;
   KetchupRoute({required super.path, super.builder, super.pageBuilder, required this.screenContextMatches});
@@ -19,7 +18,9 @@ class KetchupResponsiveMatchRouteSetting extends StatefulWidget{
   final ResponseAdaptiveCallback? cb;
 
   final List<RouteBase> routes;
-  const KetchupResponsiveMatchRouteSetting({super.key, this.ketchupKey, required this.routes, this.responses, this.init, this.cb});
+  final WidgetsBuilder? widgetsBuilder;
+
+  const KetchupResponsiveMatchRouteSetting({super.key, this.widgetsBuilder, this.ketchupKey, required this.routes, this.responses, this.init, this.cb});
 
   @override
   State<StatefulWidget> createState()=> _KetchupResponsiveMatchRouteSettingState();
@@ -32,6 +33,7 @@ class _KetchupResponsiveMatchRouteSettingState extends State<KetchupResponsiveMa
   Widget build(BuildContext context) {
     return Scaffold(
       body: KetchupUIResponsive(
+          widgetsBuilder: widget.widgetsBuilder,
           init: widget.init,
           ketchupKey: widget.ketchupKey,
           cb: widget.cb,
@@ -54,6 +56,15 @@ class _KetchupResponsiveMatchRouteSettingState extends State<KetchupResponsiveMa
   void initState() {
     super.initState();
     
+  }
+  
+}
+
+class KetchupRoutesUI extends StatelessWidget{
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    throw UnimplementedError();
   }
   
 }
