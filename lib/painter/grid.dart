@@ -20,7 +20,7 @@ class GridPainter extends CustomPainter{
 
   @override
   void paint(Canvas canvas, Size size) {
-    print('Painter paint size: $size');
+    ketchupDebug('Painter paint size: $size');
     if(lastSize != size){
       context.notifySizeChange(size, lastSize);
       double newRatio = size.aspectRatio;
@@ -41,11 +41,11 @@ class GridPainter extends CustomPainter{
         /// 默认全部模式 || 剔除模式 || 包含模式 
         if(includes.isEmpty && (excludes.isEmpty || excludes.isNotEmpty && !excludes.contains(name)) || 
           includes.isNotEmpty && includes.contains(name)){
-          // print('Painter lines, name: $name');
+          // ketchupDebug('Painter lines, name: $name');
           // if(name=='static_divides'){
-          // print('Painter lines ${lines[0].paint}');
-          // print('Painter lines ${lines[1].paint}');
-            // print('lines ${lines[2].paint}');
+          // ketchupDebug('Painter lines ${lines[0].paint}');
+          // ketchupDebug('Painter lines ${lines[1].paint}');
+            // ketchupDebug('lines ${lines[2].paint}');
           // }
           lines.forEach(eachcallback);
         }
