@@ -1,5 +1,10 @@
+// ignore_for_file: constant_identifier_names
+
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../utils.dart';
 
 enum DIRECTION {vertical, horizontal, all}
 
@@ -92,7 +97,9 @@ class GridContext extends ChangeNotifier{
 
   List<NamedLine> linesDoPaint(DIRECTION direction, Paint paint, {List<String> includes = const [], List<String> excludes = const []}){
     return linesDo(direction, (DIRECTION d, name, _){
-      print('Model d: $d, name: $name, list.paint: ${_[0].paint}, paint: $paint');
+      if (kDebugMode) {
+        ketchupDebug('Model d: $d, name: $name, list.paint: ${_[0].paint}, paint: $paint');
+      }
       return directionLines(d).update(name, (list)=>list.map<NamedLine>((unPaint){
         return NamedLine.repaint(repaint: paint, copy: unPaint);
       }).toList());
