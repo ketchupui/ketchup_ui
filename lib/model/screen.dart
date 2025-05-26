@@ -2,22 +2,39 @@
 
 import 'package:flutter/material.dart';
 import '../state.dart';
+import '../utils.dart';
+import 'context.dart';
+import 'grid.dart';
 
 enum CATEGORY { tv_gamepad, pc_mousekeyboard, mobile_gesture, all }
 
-typedef GKeyValueRecord = (GlobalKey, Size?, Offset?);
+typedef GKeyValueRecord = (GlobalKey, Rect?);
 typedef RCPair = ({int row, int column});
+// typedef ScreenPTNull = (String? singlePT, String? contextPT);
+typedef ScreenPT = (String singlePT, String contextPT);
+typedef ColumnPos = (int posLR, int posRL, int columns);
 
 const String PT_FULLSCREEN = 'fullscreen';
-const Null PT_SINGLEALL = null;
-const String PT_SINGLE_TWO = '$PT_1,$PT_2';
-const String PT_SINGLE_THREE = '$PT_SINGLE_TWO,$PT_3';
-const String PT_SINGLE_FOUR = '$PT_SINGLE_THREE,$PT_4';
-const String PT_SINGLE_FIVE = '$PT_SINGLE_FOUR,$PT_5';
+const Null PT_CELL = null;
+const String PT_CELL_ABOVE_5 = 'cell_above_5';
+
+const String PT_COLUMN_ONE = PT_1;
+const String PT_COLUMN_TWO = '$PT_1,$PT_2';
+const String PT_COLUMN_THREE = '$PT_COLUMN_TWO,$PT_3';
+const String PT_COLUMN_FOUR = '$PT_COLUMN_THREE,$PT_4';
+const String PT_COLUMN_FIVE = '$PT_COLUMN_FOUR,$PT_5';
+
+const String PT_FULL_ONE = '($PT_1)';
+const String PT_FULL_TWO = PT_12;
+const String PT_FULL_THREE = PT_123;
+const String PT_FULL_FOUR = PT_1234;
+const String PT_FULL_FIVE = PT_12345;
+
 
 const String PT_12 = '(1-2)';
 const String PT_123 = '(1-2-3)';
 const String PT_1234 = '(1-2-3-4)';
+const String PT_12345 = '(1-2-3-4-5)';
 const String PT_23 = '(2-3)';
 const String PT_234 = '(2-3-4)';
 const String PT_2345 = '(2-3-4-5)';
@@ -62,9 +79,11 @@ const String PT_1_234 ='$PT_1,$PT_234';
 const String PT_12_3 ='$PT_12,$PT_3';
 const String PT_1_23 ='$PT_1,$PT_23';
 
-class ScreenContext extends ChangeNotifier{
-  ScreenContext({RUNMODE mode = RUNMODE.debug, Size? singleAspectRatioSize, required RCPair rowColumn }): 
-  _mode = mode, _singleAspectRatioSize = singleAspectRatioSize, _rowColumn = rowColumn {
+enum TailColumnExpand { left, right, none }
+
+class ScreenContext extends BaseContext{
+  ScreenContext({RUNMODE mode = RUNMODE.debug, Size? singleAspectRatioSize, TailColumnExpand tailColumnExpand = TailColumnExpand.none, required RCPair rowColumn }): 
+  _mode = mode, _singleAspectRatioSize = singleAspectRatioSize, _rowColumn = rowColumn , _tailColumnExpand = tailColumnExpand {
     /// 同时计算 fullscreenAspectRatioSize
     rowColumn = _rowColumn;
   }
@@ -74,6 +93,7 @@ class ScreenContext extends ChangeNotifier{
   RUNMODE _mode;
   Size? _singleAspectRatioSize;
   Size? _fullscreenAspectRatioSize;
+  TailColumnExpand _tailColumnExpand;
   RCPair _rowColumn;
   
   /// 初始化 Key
@@ -84,6 +104,7 @@ class ScreenContext extends ChangeNotifier{
 
   int get row => _rowColumn.row;
   int get column => _rowColumn.column;
+  RCPair get rowColumn => _rowColumn;
   
   /// 更改行列会导致
   /// 重新布局 gKeys.clear();
@@ -96,8 +117,6 @@ class ScreenContext extends ChangeNotifier{
     gKeyMappedValues.clear();
     resetPattern();
   }
-
-  RCPair get rowColumn => _rowColumn;
   
   /// 更改模式不引起重新布局
   set mode(RUNMODE mode){
@@ -109,18 +128,31 @@ class ScreenContext extends ChangeNotifier{
   /// 重新测量 gKeyMappedValues.clear();
   set singleAspectRatioSize(Size? size){
     _singleAspectRatioSize = size;
-    _fullscreenAspectRatioSize = size != null ? Size(size.width * column, size.height * row) : null;
+    _fullscreenAspectRatioSize = size != null && TailColumnExpand.none == tailColumnExpand ? Size(size.width * column, size.height * row) : null;
     gKeyMappedValues.clear();
     resetPattern();
+  }
+
+  void handSet(ScreenHandset setting){
+    rowColumn = setting.rowColumn;
+    singleAspectRatioSize = setting.singleAspectRatio;
   }
 
   Size? get fullscreenAspectRatioSize => _fullscreenAspectRatioSize;
 
   bool get isNeedMeasure => gKeyMappedValues.isEmpty; 
 
+  bool get measured => gKeyMappedValues.isNotEmpty;
+
   Size? get singleAspectRatioSize => _singleAspectRatioSize; 
 
+  TailColumnExpand get tailColumnExpand => _tailColumnExpand;
+
+  set tailColumnExpand(TailColumnExpand expand)=>_tailColumnExpand = expand;
+
   RUNMODE get mode => _mode;
+
+  List<String> get singles => _currentPattern == PT_CELL ? List.generate(column, (index)=>'${index+1}') : _currentPattern!.split(',');
    /// 六联屏、七联屏(暂不设计)
   /// 五联屏
   /// 5:全屏(1,2,3,4,5), 左边(1,2), 中左(2,3), 正中央(3), 中右(3,4), 右边(4,5), 中间(2,3,4), 左(1,2,3), 右(3,4,5), 最左=左左(1), 最右=右右(5), 靠左=左中(2), 靠右=右中(4), 左全屏(1,2,3,4), 右全屏(2,3,4,5)
@@ -155,20 +187,32 @@ class ScreenContext extends ChangeNotifier{
   String? _currentPattern;
   String? _lastPattern;
 
-  set currentPattern(String? current){
+  set currentPatternNullable(String? current){
     _lastPattern = _currentPattern;
     _currentPattern = current;
-    if(_currentPattern != _lastPattern){
-      gKeyMappedValues.clear();
-    }
+    /// 确保生命周期 onMeasured 每次都执行
+    // if(_currentPattern != _lastPattern){
+    gKeyMappedValues.clear();
+    // }
   } 
+
+  void autoSetPatternByColumnNum(){
+    currentPatternNullable = switch(column){
+      5=>PT_COLUMN_FIVE, 4=>PT_COLUMN_FOUR, 3=>PT_COLUMN_THREE, 2=>PT_COLUMN_TWO, 1=>PT_COLUMN_ONE, _=>PT_CELL
+    };
+  }
 
   void resetPattern(){
     _currentPattern = null;
     _lastPattern = null;
   }
   
-  String? get currentPattern => _currentPattern;
+  String? get currentPatternNullable => _currentPattern;
+  String get currentPattern => _currentPattern == null ? switch(column){
+    1=>PT_COLUMN_ONE,2=>PT_COLUMN_TWO,3=>PT_COLUMN_THREE,4=>PT_COLUMN_FOUR,5=>PT_COLUMN_FIVE,_=>PT_CELL_ABOVE_5
+  } : (currentPatternNullable == PT_FULLSCREEN ? switch(column){
+    1=>PT_FULL_ONE,2=>PT_FULL_TWO,3=>PT_FULL_THREE,4=>PT_FULL_FOUR,5=>PT_FULL_FIVE,_=>PT_FULLSCREEN
+  } : currentPatternNullable!);
   String? get lastPattern => _lastPattern; 
   
   Map<String, Color> contextScreenColorMap = {
@@ -186,7 +230,7 @@ class ScreenContext extends ChangeNotifier{
   Map<int, Map<String, Map<String?, String?>>> contextScreenPatternsMap = {
     5: {
       PT_12:{
-        PT_SINGLEALL: PT_12_3_4_5, PT_12_3_4_5: PT_SINGLEALL, 
+        PT_CELL: PT_12_3_4_5, PT_12_3_4_5: PT_CELL, 
         PT_1_23_4_5: PT_123_4_5, PT_123_4_5: PT_1_23_4_5, 
         PT_1_2_34_5: PT_12_34_5, PT_12_34_5: PT_1_2_34_5,
         PT_1_2_3_45: PT_12_3_45, PT_12_3_45: PT_1_2_3_45,
@@ -196,7 +240,7 @@ class ScreenContext extends ChangeNotifier{
         PT_1_2345: PT_FULLSCREEN, PT_FULLSCREEN: PT_1_2345
       },
       PT_23:{
-        PT_SINGLEALL: PT_1_23_4_5, PT_1_23_4_5: PT_SINGLEALL, 
+        PT_CELL: PT_1_23_4_5, PT_1_23_4_5: PT_CELL, 
         PT_12_3_4_5: PT_123_4_5, PT_123_4_5: PT_12_3_4_5,
         PT_12_34_5: PT_1234_5, PT_1234_5: PT_12_34_5,
         PT_12_345: PT_FULLSCREEN, PT_FULLSCREEN: PT_12_345,
@@ -206,7 +250,7 @@ class ScreenContext extends ChangeNotifier{
         PT_1_2_345: PT_1_2345, PT_1_2345: PT_1_2_345
       },
       PT_34:{
-        PT_SINGLEALL: PT_1_2_34_5, PT_1_2_34_5: PT_SINGLEALL,
+        PT_CELL: PT_1_2_34_5, PT_1_2_34_5: PT_CELL,
         PT_12_3_4_5: PT_12_34_5, PT_12_34_5: PT_12_3_4_5,        
         PT_123_4_5: PT_1234_5, PT_1234_5: PT_123_4_5,
         PT_123_45: PT_FULLSCREEN, PT_FULLSCREEN: PT_123_45,
@@ -216,7 +260,7 @@ class ScreenContext extends ChangeNotifier{
         PT_1_2_3_45: PT_1_2_345, PT_1_2_345: PT_1_2_3_45,
       },
       PT_45:{
-        PT_SINGLEALL: PT_1_2_3_45, PT_1_2_3_45: PT_SINGLEALL,
+        PT_CELL: PT_1_2_3_45, PT_1_2_3_45: PT_CELL,
         PT_12_3_4_5: PT_12_3_45, PT_12_3_45: PT_12_3_4_5,
         PT_1_23_4_5: PT_1_23_45, PT_1_23_45: PT_1_23_4_5,
         PT_1_2_34_5: PT_1_2_345, PT_1_2_345: PT_1_2_34_5,
@@ -228,19 +272,19 @@ class ScreenContext extends ChangeNotifier{
     },
     4:{
       PT_12:{
-        PT_12_3_4: PT_SINGLEALL, PT_SINGLEALL: PT_12_3_4, 
+        PT_12_3_4: PT_CELL, PT_CELL: PT_12_3_4, 
         PT_1_23_4: PT_123_4, PT_123_4: PT_1_23_4,
         PT_1_2_34: PT_12_34, PT_12_34: PT_1_2_34,
         PT_1_234: PT_FULLSCREEN, PT_FULLSCREEN: PT_1_234,
       },
       PT_23:{
-        PT_1_23_4: PT_SINGLEALL, PT_SINGLEALL: PT_1_23_4,
+        PT_1_23_4: PT_CELL, PT_CELL: PT_1_23_4,
         PT_12_3_4: PT_123_4, PT_123_4: PT_12_3_4,
         PT_12_34: PT_FULLSCREEN, PT_FULLSCREEN: PT_12_34,
         PT_1_2_34: PT_1_234, PT_1_234: PT_1_2_34
       },
       PT_34:{
-        PT_1_2_34: PT_SINGLEALL, PT_SINGLEALL: PT_1_2_34,
+        PT_1_2_34: PT_CELL, PT_CELL: PT_1_2_34,
         PT_12_3_4: PT_12_34,PT_12_34: PT_12_3_4,
         PT_1_23_4: PT_1_234,PT_1_234: PT_1_23_4,
         PT_123_4: PT_FULLSCREEN, PT_FULLSCREEN: PT_123_4
@@ -248,11 +292,11 @@ class ScreenContext extends ChangeNotifier{
     },
     3:{
       PT_12:{
-        PT_12_3: PT_SINGLEALL, PT_SINGLEALL:PT_12_3,
+        PT_12_3: PT_CELL, PT_CELL:PT_12_3,
         PT_1_23: PT_FULLSCREEN, PT_FULLSCREEN: PT_1_23,
       },
       PT_23:{
-        PT_1_23: PT_SINGLEALL, PT_SINGLEALL: PT_1_23,
+        PT_1_23: PT_CELL, PT_CELL: PT_1_23,
         PT_12_3: PT_FULLSCREEN, PT_FULLSCREEN: PT_12_3
       }
     }
@@ -272,6 +316,284 @@ class ScreenContext extends ChangeNotifier{
     },
     3:{
       '2+1拼画': [PT_12_3,PT_1_23]
+    }
+  };
+
+  Rect? measuredCell(int column, [int row = 1]){
+    if(measured){
+      var data = gKeyMappedValues['cell-$column-$row'];
+      return data?.$2;
+    }
+    return null;
+  }
+
+  /// 包含 cell-x-1 的情况
+  Rect? measuredPT(String screenPT){
+    if(measured){
+      var data = gKeyMappedValues[screenPT] ?? (row == 1 ? gKeyMappedValues['cell-$screenPT-1'] : null);
+      return data?.$2;
+    }
+    return null;
+  }
+
+  (String, String)? cellRange(String screenPT){
+    switch(screenPT){
+      case PT_1:
+      case PT_FULL_ONE:
+        return ('cell-1-1', 'cell-1-$row');
+      case PT_2:
+        return ('cell-2-1', 'cell-2-$row');
+      case PT_3:
+        return ('cell-3-1', 'cell-3-$row');
+      case PT_4:
+        return ('cell-4-1', 'cell-4-$row');
+      case PT_5:
+        return ('cell-5-1', 'cell-5-$row');
+    }
+    if(screenPT.startsWith('(') && screenPT.endsWith(')')){
+      var ranges = screenPT.substring(1, screenPT.length - 1).split('-');
+      return ('cell-${ranges.first}-1','cell-${ranges.last}-$row');
+    }
+    return null;
+  }
+
+  Rect? paintRect(String screenPT){
+    if(measured){
+      var data = measuredPT(screenPT);
+      if(data != null){
+        return data;
+      }
+      /// 如果没有现成的需要计算
+      var range = cellRange(screenPT);
+      if(range != null){
+        final fromStartCell = gKeyMappedValues[range.$1];
+        final toEndCell = gKeyMappedValues[range.$2];
+        if(fromStartCell != null && fromStartCell.$2 != null && toEndCell != null && toEndCell.$2 != null){
+          return fromStartCell.$2!.expandToInclude(toEndCell.$2!);
+        }
+      }
+    }
+    return null;
+  }
+
+  Rect? rectFromGrid({int? column, int row = 1, String? screenPT, required List<NamedLine> verticals, required List<NamedLine> horizontals, bool isGlobal = true}){
+    assert(verticals.length > 1 && horizontals.length > 1);
+    assert(column != null || screenPT != null);
+    Rect? measured;
+    if(screenPT != null){
+      measured = measuredPT(screenPT);
+    }else{
+      measured = measuredCell(column!, row);
+    }
+    if(measured != null){
+      return Rect.fromLTRB(verticals.first.computeWidth(measured.size), horizontals.first.computeHeight(measured.size),
+                          verticals.last.computeWidth(measured.size), horizontals.last.computeHeight(measured.size)).shift( isGlobal ? measured.topLeft : Offset.zero );
+    }
+    return null;
+  }
+
+  Offset? offsetFromGrid({int? column, int row = 1, String? screenPT, required NamedLine vertical, required NamedLine horizontal, bool isGlobal = true}){
+    assert(column != null || screenPT != null);
+    Rect? measured;
+    if(screenPT != null){
+      measured = measuredPT(screenPT);
+    }else{
+      measured = measuredCell(column!, row);
+    }
+    if(measured != null){
+      ketchupDebug('autoOffset:$measured, vertical(1/1)=>${vertical.percentGetter(Size.square(1))}, horizontal(1/1)=>${horizontal.percentGetter(Size.square(1))}');
+      return (isGlobal ? measured.topLeft : Offset.zero ) + Offset(vertical.computeWidth(measured.size), horizontal.computeHeight(measured.size));
+    }
+    return null;
+  }
+
+  bool get tailColumnExpandAvailable => tailColumnExpand != TailColumnExpand.none && singleAspectRatioSize != null;
+  
+  /// 检查屏幕语境是否包含尾屏
+  isTailInclude(String singlePT){
+    if(tailColumnExpandAvailable){
+      var leftTail = PT_1;
+      var rightTail = '$column';
+      if(tailColumnExpand == TailColumnExpand.left && singlePT.contains(leftTail)) return true;
+      if(tailColumnExpand == TailColumnExpand.right && singlePT.contains(rightTail)) return true;
+    }
+    return false;
+  }
+
+  static ColumnPos? columnPosFromScreenPT(String screenPT){
+    switch(screenPT){
+      case PT_12345:
+        return (1, 5, 5);
+      case PT_1234:
+        return (1, 4, 4);
+      case PT_2345:
+        return (2, 5, 4);
+      case PT_123:
+        return (1, 3, 3);
+      case PT_234:
+        return (2, 4, 3);
+      case PT_345:
+        return (3, 5, 3);
+      case PT_12:
+        return (1, 2, 2);
+      case PT_23:
+        return (2, 3, 2);
+      case PT_34:
+        return (3, 4, 2);
+      case PT_45:
+        return (4, 5, 2);
+      case PT_1:
+        return (1, 1, 1);
+      case PT_2:
+        return (2, 2, 1);
+      case PT_3:
+        return (3, 3, 1);
+      case PT_4:
+        return (4, 4, 1);
+      case PT_5:
+        return (5, 5, 1);
+      default: 
+        return null;
+    }
+  }
+
+  static String? screenPTColumnsLR(int fromStartLR, int columns){
+    switch(fromStartLR){
+      case 1:
+        return switch(columns){
+          5=>PT_12345,
+          4=>PT_1234,
+          3=>PT_123,
+          2=>PT_12,
+          1=>PT_1,
+          _=>null
+        };
+      case 2:
+        return switch(columns){
+          4=>PT_2345,
+          3=>PT_234,
+          2=>PT_23,
+          1=>PT_2,
+          _=>null
+        };
+      case 3:
+        return switch(columns){
+          3=>PT_345,
+          2=>PT_34,
+          1=>PT_3,
+          _=>null
+        };
+      case 4:
+        return switch(columns){
+          2=>PT_45,
+          1=>PT_4,
+          _=>null
+        };
+      case 5:
+        return switch(columns){
+          1=>PT_5,
+          _=>null
+        };
+      default: 
+        return null;
+    }
+  }
+
+  static String? screenPTColumnsRL(int fromStartRL, int columns){
+    switch(fromStartRL){
+      case 5:
+        return switch(columns){
+          5=>PT_12345,
+          4=>PT_2345,
+          3=>PT_345,
+          2=>PT_45,
+          1=>PT_5,
+          _=>null
+        };
+      case 4:
+        return switch(columns){
+          4=>PT_1234,
+          3=>PT_234,
+          2=>PT_34,
+          1=>PT_4,
+          _=>null
+        };
+      case 3:
+        return switch(columns){
+          3=>PT_123,
+          2=>PT_23,
+          1=>PT_3,
+          _=>null
+        };
+      case 2:
+        return switch(columns){
+          2=>PT_12,
+          1=>PT_2,
+          _=>null
+        };
+      case 1:
+        return switch(columns){
+          1=>PT_1,
+          _=>null
+        };
+      default: 
+        return null;
+    }
+  }
+
+  static List<String>? genScreenPTColumnsLR(List<int> columnsLR, int maxColumn){
+    if(columnsLR.length > maxColumn || columnsLR.fold<int>(0, (total, added)=>total+added) > maxColumn ) return null;
+    var fromStart = 1, index = 0;
+    List<String> list = [];
+    while(fromStart <= maxColumn){
+      var willFillColumns = index < columnsLR.length ?  columnsLR[index] : 1;
+      var willAdded = screenPTColumnsLR(fromStart, willFillColumns);
+      if(willAdded != null){
+        list.add(willAdded);
+        index ++;
+        fromStart += willFillColumns;
+      }else{
+        return null;
+      }
+    }
+    return list;
+  }
+
+  static List<String>? genScreenPTColumnsRL(List<int> columnsRL, int maxColumn){
+    if(columnsRL.length > maxColumn || columnsRL.fold<int>(0, (total, added)=>total+added) > maxColumn ) return null;
+    var fromStart = maxColumn, index = 0;
+    List<String> list = [];
+    while(fromStart > 0){
+      var willFillColumns = index < columnsRL.length ?  columnsRL[index] : 1;
+      var willAdded = screenPTColumnsRL(fromStart, willFillColumns);
+      if(willAdded != null){
+        list.add(willAdded);
+        index ++;
+        fromStart -= willFillColumns;
+      }else{
+        return null;
+      }
+    }
+    return list.reversed.toList();
+  }
+
+  String? genContextPTColumnsLR(List<int> columnsLR){
+    return genScreenPTColumnsLR(columnsLR, column)?.join(','); 
+  }
+
+  String? genContextPTColumnsRL(List<int> columnsRL){
+    return genScreenPTColumnsRL(columnsRL, column)?.join(','); 
+  }
+  
+  List<VoidCallback> _measuredCbs = [];
+
+  void produceMeasuredCb(VoidCallback measuredCb){
+    _measuredCbs.add(measuredCb);
+  }
+  
+  VoidCallback? get consumeMeasuredCb => _measuredCbs.isEmpty ? null : (){
+    while(_measuredCbs.isNotEmpty){
+      _measuredCbs.removeLast()();
     }
   };
 }

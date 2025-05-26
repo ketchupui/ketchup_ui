@@ -1,6 +1,6 @@
 name: ketchup_ui
-description: "番茄汁UI,基于拼接大屏生态的基础类库"
-version: 0.0.2
+description: "番茄汁UI,基于拼接大屏生态的基础UI库,解决大屏适配问题"
+version: 0.1.0
 homepage: https://ketchupui.github.io
 repository: https://github.com/ketchupui/ketchup_ui
 
@@ -14,6 +14,7 @@ dependencies:
 
   flutter:
     sdk: flutter
+  collection: ^1.19.0
 
 
 dev_dependencies:
