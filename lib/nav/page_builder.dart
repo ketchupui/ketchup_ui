@@ -45,11 +45,6 @@ class SimpleNavigatorPageBuilder extends NavigatorPage{
   List<int> availableColumns;
   
   @override
-  int weight(int columns, int newPageLevel, bool isNewPage) {
-    return newPageLevel;
-  }
-  
-  @override
   void onCreate() {
   }
   

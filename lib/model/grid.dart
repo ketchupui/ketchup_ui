@@ -123,13 +123,6 @@ class GridContext extends BaseContext{
         var xLessGetter = reverseX ? vLines[xGetterIndex + 1] : vLines[xGetterIndex];
         var xMoreGetter = reverseX ? vLines[xGetterIndex] : vLines[xGetterIndex + 1];
         if(!looseEqualIgnored && xMoreGetter.percent - xLessGetter.percent < xMinFactor || xMoreGetter.looseEqual(xLessGetter)) continue;
-
-        double literalValue(NamedLine line, Size size){
-          if(line.literalGetter != null){
-            return pxUnitDoubleGetter(line.literalGetter!(size))(size);
-          }
-          return 0;
-        }
         
         newRow.add((Size size)=>Rect.fromPoints(
           Offset(xLessGetter.computeWidth(size), yLessGetter.computeHeight(size)),
