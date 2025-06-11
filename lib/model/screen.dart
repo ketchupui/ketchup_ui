@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import '../state.dart';
-import '../utils.dart';
 import 'context.dart';
 import 'grid.dart';
 

@@ -100,14 +100,14 @@ abstract class NamedLayerCommitInterface {
   @protected
   bool _commitNamedLayerRemoved(String named, CPO remove);
 
-  @protected
-  bool _commitNamedLayerCanRemove(String named, CPO remove);
+  // @protected
+  // bool _commitNamedLayerCanRemove(String named, CPO remove);
   
   @protected
   bool _commitNamedLayersRemoved(String named, Iterable<CPO> removes);
   
-  @protected
-  bool _commitNamedLayersCanRemove(String named, Iterable<CPO> removes);
+  // @protected
+  // bool _commitNamedLayersCanRemove(String named, Iterable<CPO> removes);
 
   @protected
   bool _commitNamedLayersGroupsRemoved(Iterable<String> gremoves);
