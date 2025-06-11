@@ -392,12 +392,25 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
       __historyRoutes.add(currentRoute!);
     }
     __forwardRoutes.clear();
-    _innerGoNoHistory(currentRoute = route, 'nav.go');
+    _innerGoNoHistory(currentRoute = route, 'nav.push');
+  }
+
+  void animPush(String route, AnimationController animCtrl){
+    if(currentRoute != null){
+      __historyRoutes.add(currentRoute!);
+    }
+    __forwardRoutes.clear();
+    _innerGoNoHistory(currentRoute = route, 'nav.animPush', animCtrl);
   }
 
   void replace(String route){
     __forwardRoutes.clear;
     _innerGoNoHistory(currentRoute = route, 'nav.replace');
+  }
+
+  /// 将指定页面扩展到最大
+  void animateExpandMax(){
+    
   }
   /// 情况1：主动，缓存没有,当前没有，新建并执行 onCreate(routeParams) - onResume() 
   /// 情况2：主动，缓存有，当前没有，由于 back 或者再次执行相同跳转，则从缓存中取出并执行 onResume()
@@ -407,7 +420,7 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
   /// 情况6：被动，当前有，权重不够或者处于权重策略需要换位置或收缩，取出当前并执行 onScreenWillChange - onScreenChanged
   /// 情况7：被动，当前没有，缓存有，由于缓存已满，被迫剔除缓存前 执行 onDestroy()
   /// 情况8：被动，当前有，缓存没有，由于 replace 操作对当前界面进行了删除，没有进入缓存和历史栈，执行 onPause() - onDestroy()
-  void _innerGoNoHistory(String path, [String? debugInfo, AnimationController? animCtr]){
+  void _innerGoNoHistory(String path, [String? debugInfo, AnimationController? animCtrl]){
     var routeParam = __cachePathRoutes[path] ?? find(path);
     if(routeParam != null){
       __cachePathRoutes[path] = routeParam;
@@ -420,123 +433,131 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
       if(!isFromCache){
         cachePage = CachePage.pathPage(path, route.ketchupPageBuilder!());
       }
-      cachePage.page?.onReceive({ ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() });
-      // cachePage ??= CachePage.createPage(path, route.ketchupPageBuilder()..onCreate(param));
-      // cachePage.page?.onResume();
-      // KetchupRoutePage page = route.ketchupPageBuilder();
-      // page.onCreate(param);
-      // page.onResume();
+      // cachePage.page?.onReceive({ ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() });
 
-
-      KetchupRoutePage? page = cachePage.page;
-      /// NavigatorPage 和 NavigatorPageWidget 是两个类
-      if(page is MultiColumns){
-        print('param:$param');
-        print('pageClass:$pageClass');
-        print('availableColumns:${(page as MultiColumns).availableColumns}');
-        targetColumn = availableColumns((page as MultiColumns).availableColumns, pageClass).first;
-      }
-
-      var willReplacePair = shiftExpand(__currentPair, (pageClass, targetColumn, cachePage));
-      for (var rElement in willReplacePair.$2) {
-        rElement.$3.page?.onPause();
-        rElement.$3.screenPT = null;
-        __cachePathPages.update(rElement.$3.onCreatePath!, (already){
-          already.page?.onDestroy();
-          return rElement.$3;
-        }, ifAbsent:()=>rElement.$3);
-      }
-      __currentPair = willReplacePair.$1;
-
-      if(!isFromCache){
-        page!.onCreate();
-      }else{
-        page!.onResume();
-      }
-
-      var merged = mergeScreenPT<NavPair<CachePage>>(currentScreenPTs!, currentContextPT!, currentNavPairList);
-      endCall(){
-        lazyUpdate((){
-          screen.currentPatternNullable = currentContextPT;
-        },'$debugInfo=$path', (){
-          for (var cache in currentCachePages) {
-            cache.page!.onMeasured(screen);
-          }
-        });
-      };
-
-      List<AnimationStatusListener> listeners = [];
-      AnimationStatusListener addListener(AnimationStatusListener listener){
-        listeners.add(listener);
-        return listener;
-      }
-      AnimationStatusListener removeFirst(){
-        return listeners.removeAt(0);
-      }
-      for (var indexed in merged.indexed) {
-        final oldScreenPT = indexed.$2.$2.$3.screenPT;
-        if(oldScreenPT.toString() != indexed.$2.$1.toString()){
-          indexed.$2.$2.$3.page?.onScreenWillChange(indexed.$2.$1);
-          indexed.$2.$2.$3.screenPT = indexed.$2.$1;
-          
-          /// 5月26日 新增-页面跳转动画 Hook 第一个结束动画就触发 onMeasured
-          if(animCtr != null && indexed.$2.$2.$3.page != null){
-            final anim = indexed.$2.$2.$3.page!.willPlayAnimated(from: oldScreenPT, to: indexed.$2.$1, animCtr: animCtr);
-            anim ..addStatusListener(addListener((AnimationStatus status){
-                if(status.isCompleted){
-                  animCtr.removeStatusListener(removeFirst());
-                  if(listeners.isEmpty){
-                    endCall();
-                  }
-                }
-              }))
-              ..forward();
-          }
-        }
-      }
-
-      if(listeners.isEmpty){
-        endCall();
-      }
+      _innerGoPageReadyWillReceive(cachePage,
+        cachePage.page!, path, { ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() }, pageClass, targetColumn, isFromCache, debugInfo, animCtrl );
     }
   }
-  
-  void nopathGo(int pageClass, int targetColumn, KetchupRoutePage page, [String? debugInfo]){
-    page.onReceive(null);
-    if(page is MultiColumns){
-        print('pageClass:$pageClass');
-        print('availableColumns:${(page as MultiColumns).availableColumns}');
-        targetColumn = availableColumns((page as MultiColumns).availableColumns, pageClass).first;
-      }
 
-      var willReplacePair = shiftExpand(__currentPair, (pageClass, targetColumn, CachePage.nopathPage(page)));
-      for (var rElement in willReplacePair.$2) {
-        rElement.$3.page?.onPause();
-        rElement.$3.screenPT = null;
-        __cachePathPages.update(rElement.$3.onCreatePath!, (already){
+  void _innerGoPageReadyWillReceive(CachePage? cachePage, KetchupRoutePage page, String? path, Map<String, String>? onRecieveParams, int pageClass, int targetColumn, bool shouldCallResume, [String? debugInfo, AnimationController? animCtrl]){
+    page.onReceive(onRecieveParams);
+    /// NavigatorPage 和 NavigatorPageWidget 是两个类
+    if(page is MultiColumns){
+      print('param:$onRecieveParams');
+      print('pageClass:$pageClass');
+      print('availableColumns:${(page as MultiColumns).availableColumns}');
+      targetColumn = availableColumns((page as MultiColumns).availableColumns, pageClass).first;
+    }
+
+    var willReplacePair = shiftExpand(__currentPair, (pageClass, targetColumn, cachePage ?? CachePage.nopathPage(page)));
+    for (var rElement in willReplacePair.$2) {
+      rElement.$3.page?.onPause();
+      rElement.$3.screenPT = null;
+      final onCreatePath = rElement.$3.onCreatePath;
+      if(onCreatePath != null){
+        __cachePathPages.update(onCreatePath, (already){
           already.page?.onDestroy();
           return rElement.$3;
         }, ifAbsent:()=>rElement.$3);
+      }else{
+        rElement.$3.page?.onDestroy();
       }
-      __currentPair = willReplacePair.$1;
+    }
+    __currentPair = willReplacePair.$1;
 
+    if(shouldCallResume){
+      page.onResume();
+    }else{
       page.onCreate();
+    }
 
-      var merged = mergeScreenPT<NavPair<CachePage>>(currentScreenPTs!, currentContextPT!, currentNavPairList);
-      for (var indexed in merged.indexed) {
-        if(indexed.$2.$2.$3.screenPT.toString() != indexed.$2.$1.toString()){
-          indexed.$2.$2.$3.page?.onScreenWillChange(indexed.$2.$1);
-          indexed.$2.$2.$3.screenPT = indexed.$2.$1;
-        }
-      }
+    var merged = mergeScreenPT<NavPair<CachePage>>(currentScreenPTs!, currentContextPT!, currentNavPairList);
 
+    endCall(){
       lazyUpdate((){
         screen.currentPatternNullable = currentContextPT;
-      },'$debugInfo=nopath', (){
+      },'$debugInfo=${path ?? 'nopath'}', (){
         for (var cache in currentCachePages) {
           cache.page!.onMeasured(screen);
         }
       });
+    };
+
+    List<AnimationStatusListener> listeners = [];
+    AnimationStatusListener addListener(AnimationStatusListener listener){
+      listeners.add(listener);
+      return listener;
+    }
+    AnimationStatusListener removeFirst(){
+      return listeners.removeAt(0);
+    }
+    for (var indexed in merged.indexed) {
+      final oldScreenPT = indexed.$2.$2.$3.screenPT;
+      if(oldScreenPT.toString() != indexed.$2.$1.toString()){
+        indexed.$2.$2.$3.page?.onScreenWillChange(indexed.$2.$1);
+        indexed.$2.$2.$3.screenPT = indexed.$2.$1;
+        
+        /// 5月26日 新增-页面跳转动画 Hook 第一个结束动画就触发 onMeasured
+        if(animCtrl != null && indexed.$2.$2.$3.page != null){
+          final anim = indexed.$2.$2.$3.page!.willPlayAnimated(fromPT: oldScreenPT, toPT: indexed.$2.$1, animCtrl: animCtrl);
+          anim
+            ..duration = Duration(milliseconds: 1300)
+            ..addStatusListener(addListener((AnimationStatus status){
+              if(status.isCompleted){
+                animCtrl.removeStatusListener(removeFirst());
+                if(listeners.isEmpty){
+                  endCall();
+                }
+              }
+            }))
+            ..forward();
+        }
+      }
+    }
+
+    if(listeners.isEmpty){
+      endCall();
+    }
+  }
+  
+  void nopathGo(int pageClass, int targetColumn, KetchupRoutePage page, {Map<String, String>? constructParams, String? debugInfo, AnimationController? animCtrl}){
+    _innerGoPageReadyWillReceive(null, page, null, constructParams, pageClass, targetColumn, false, debugInfo, animCtrl);
+    // page.onReceive(null);
+    // if(page is MultiColumns){
+    //     print('pageClass:$pageClass');
+    //     print('availableColumns:${(page as MultiColumns).availableColumns}');
+    //     targetColumn = availableColumns((page as MultiColumns).availableColumns, pageClass).first;
+    //   }
+
+    //   var willReplacePair = shiftExpand(__currentPair, (pageClass, targetColumn, CachePage.nopathPage(page)));
+    //   for (var rElement in willReplacePair.$2) {
+    //     rElement.$3.page?.onPause();
+    //     rElement.$3.screenPT = null;
+    //     __cachePathPages.update(rElement.$3.onCreatePath!, (already){
+    //       already.page?.onDestroy();
+    //       return rElement.$3;
+    //     }, ifAbsent:()=>rElement.$3);
+    //   }
+    //   __currentPair = willReplacePair.$1;
+
+    //   page.onCreate();
+
+    //   var merged = mergeScreenPT<NavPair<CachePage>>(currentScreenPTs!, currentContextPT!, currentNavPairList);
+    //   for (var indexed in merged.indexed) {
+    //     if(indexed.$2.$2.$3.screenPT.toString() != indexed.$2.$1.toString()){
+    //       indexed.$2.$2.$3.page?.onScreenWillChange(indexed.$2.$1);
+    //       indexed.$2.$2.$3.screenPT = indexed.$2.$1;
+    //     }
+    //   }
+
+    //   lazyUpdate((){
+    //     screen.currentPatternNullable = currentContextPT;
+    //   },'$debugInfo=nopath', (){
+    //     for (var cache in currentCachePages) {
+    //       cache.page!.onMeasured(screen);
+    //     }
+    //   });
   }
   // ignore: slash_for_doc_comments
   /**
@@ -570,6 +591,24 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
       __historyRoutes.add(currentRoute!);
       _innerGoNoHistory(currentRoute = forwardRoute);
     }
+  }
+
+  void onSizeChangeListener(Size newSize, Size? oldSize){
+    WidgetsBinding.instance.addPostFrameCallback((Duration dt){
+      WidgetsBinding.instance.addPostFrameCallback((Duration dt){
+        for (var cache in currentCachePages) {
+          cache.page?.onMeasured(screen);
+        }
+      });
+    });
+  }
+
+  void initAfterScreenContext(){
+    screen.addSizeChangeListener(onSizeChangeListener);
+  }
+
+  void dispose(){
+    screen.removeSizeChangeListener(onSizeChangeListener);
   }
 
   WidgetsBuilder build(){
@@ -616,6 +655,9 @@ class EmptyContextAccessorImp implements ContextAccessor{
   void Function(VoidCallback p1, [String? d]) get update => (VoidCallback p1, [String? d]){
   };
   
+  @override
+  Size get size => Size.zero;
+  
 }
 
 class NavigaterBuilder extends HistoryCachedNavigaterBuilder{
@@ -649,6 +691,9 @@ class NavigaterBuilder extends HistoryCachedNavigaterBuilder{
   
   @override
   void Function(VoidCallback p1, [String? d]) get update => ca.update;
+  
+  @override
+  Size get size => ca.size;
   
 }
 

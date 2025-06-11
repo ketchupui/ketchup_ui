@@ -336,6 +336,14 @@ class ScreenContext extends BaseContext{
     return null;
   }
 
+  // Rect? Function(Size size) columnRect(String screenPT){
+  //   columnPosFromScreenPT(screenPT);
+  //   /// 平分
+  //   if(_singleAspectRatioSize == null){
+      
+  //   }
+  // }
+
   (String, String)? cellRange(String screenPT){
     switch(screenPT){
       case PT_1:
@@ -401,7 +409,7 @@ class ScreenContext extends BaseContext{
       measured = measuredCell(column!, row);
     }
     if(measured != null){
-      ketchupDebug('autoOffset:$measured, vertical(1/1)=>${vertical.percentGetter(Size.square(1))}, horizontal(1/1)=>${horizontal.percentGetter(Size.square(1))}');
+      // ketchupDebug('autoOffset:$measured, vertical(1/1)=>${vertical.percentGetter(Size.square(1))}, horizontal(1/1)=>${horizontal.percentGetter(Size.square(1))}');
       return (isGlobal ? measured.topLeft : Offset.zero ) + Offset(vertical.computeWidth(measured.size), horizontal.computeHeight(measured.size));
     }
     return null;
@@ -455,6 +463,13 @@ class ScreenContext extends BaseContext{
       default: 
         return null;
     }
+  }
+  
+  String screenPTFromColumnsLR(int column){
+    return singles.firstWhere((pt){
+      final pos = columnPosFromScreenPT(pt)!;
+      return column >= pos.$1 && column <= pos.$2;
+    });
   }
 
   static String? screenPTColumnsLR(int fromStartLR, int columns){

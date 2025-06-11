@@ -46,46 +46,23 @@ extension ColorExtension on Color {
   }
 }
 
-Object? ketchupDebug(Object? object){
+// Object? ketchupDebug(Object? object){
+//   if(kDebugMode){
+//     print('ketchup-ui:$object');
+//   }
+//   return object;
+// }
+
+T ketchupDebug<T>(T object, {String? prefix, String? suffix}){
   if(kDebugMode){
-    print('ketchup-ui:$object');
+    if(prefix != null || suffix != null){
+      print('${prefix ?? ''}$object${suffix ?? ''}');
+    } else {
+      print('ketchupDebug:$object');
+    }
   }
   return object;
 }
-
-enum PxUnit { vh, vw, rpx, px }
-typedef PxUnitValue<T> = (T value, PxUnit unit);
-typedef PxUnitDouble = PxUnitValue<double>;
-typedef PxUnitGetter = double Function(Size viewport);
-typedef PxUnitValueGetter<T> = T Function(Size viewport);
-typedef PxUnitDoubleGetter = PxUnitValueGetter<double>;
-
-PxUnitGetter pxUnitGetter(PxUnit pu){
-  return switch(pu){
-    PxUnit.vh => (Size viewport) => viewport.height / 100,
-    PxUnit.vw => (Size viewport) => viewport.width / 100,
-    PxUnit.rpx => (Size viewport) => viewport.width / 750,
-    PxUnit.px => (Size viewport) => 1,
-  };
-}
-
-PxUnitDoubleGetter pxUnitDoubleGetter(PxUnitDouble value){
-  return switch(value.$2){
-    PxUnit.vh => (Size viewport) => value.$1 * viewport.height / 100,
-    PxUnit.vw => (Size viewport) => value.$1 * viewport.width / 100,
-    PxUnit.rpx => (Size viewport) => value.$1 * viewport.width / 750,
-    PxUnit.px => (Size viewport) => value.$1,
-  };
-}
-
-PxUnitValueGetter<Size> vhSize(Size size) => (Size viewport) => size * pxUnitGetter(PxUnit.vh)(viewport);
-PxUnitValueGetter<Offset> vhOffset(Offset offset) => (Size viewport) => offset * pxUnitGetter(PxUnit.vh)(viewport);
-PxUnitValueGetter<Rect> vhRect(Rect rect) => (Size viewport) => rect.topLeft * pxUnitGetter(PxUnit.vh)(viewport) & rect.size * pxUnitGetter(PxUnit.vh)(viewport);
-PxUnitValueGetter<Rect> vhRectOnlySize(Rect rect) => (Size viewport) => rect.topLeft & rect.size * pxUnitGetter(PxUnit.vh)(viewport);
-
-PxUnitDoubleGetter vh(double value) => pxUnitDoubleGetter((value, PxUnit.vh));
-PxUnitDoubleGetter vw(double value) => pxUnitDoubleGetter((value, PxUnit.vw));
-PxUnitDoubleGetter rpx(double value) => pxUnitDoubleGetter((value, PxUnit.rpx));
 
 // bool isGridInclude(String name, GridContext grid){
 //   List<String> includes = grid.includes;

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../model/context.dart';
 
 abstract class ContextPainter extends CustomPainter{
-  Size? lastSize;
+  // Size? lastSize;
   BaseContext get context;
+  ContextPainter({super.repaint});
   void paintContext(Canvas ctxCanvas, Size ctxSize);
   
   @override
@@ -20,5 +21,4 @@ abstract class ContextPainter extends CustomPainter{
     // }
     paintContext(canvas, size);
   }
-  
 }

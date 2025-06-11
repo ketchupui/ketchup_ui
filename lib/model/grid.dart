@@ -2,10 +2,30 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../utils.dart';
+import 'package:flutter/services.dart';
+import 'package:ketchup_ui/ketchup_ui.dart';
+import '../pxunit.dart';
 import 'context.dart';
 
-enum DIRECTION { vertical, horizontal, all }
+enum DIRECTION_ENUM { vertical, horizontal }
+enum END_POINT { include_start_only, include_end_only, include_start_end, exclude_start_end }
+
+class DIRECTION {
+  final Set<DIRECTION_ENUM> sets;
+
+  const DIRECTION._(this.sets);
+  factory DIRECTION.from(DIRECTION_ENUM d) => DIRECTION._({d});
+
+  static const DIRECTION horizontal = DIRECTION._({DIRECTION_ENUM.horizontal});
+  static const DIRECTION vertical = DIRECTION._({DIRECTION_ENUM.vertical});
+  static const DIRECTION both = DIRECTION._({
+    DIRECTION_ENUM.horizontal,
+    DIRECTION_ENUM.vertical,
+  });
+
+  bool contains(DIRECTION_ENUM direction) => sets.contains(direction);
+}
+
 // enum DIRECTION_ORDER { start, end }
 
 const String SCREEN_DIVIDES = 'screen_divides';
@@ -28,14 +48,216 @@ const String NAME_MARGIN = 'margin';
 const String NAME_START = 'start';
 const String NAME_END = 'end';
 
+const String NAME_RENAME = 'rename';
+
 /// 快查询标记
 const String QUICK_PREFIX = '_QUICK_';
 
 typedef RectGetter = Rect Function(Size size);
 typedef PercentGetter = double Function(Size size);
 typedef LiteralGetter = PxUnitDouble Function(Size size);
-typedef PercentPair = (double percent, PercentGetter getter);
-typedef LinesDoAction = List<NamedLine> Function(DIRECTION direction, String linesFatherName, List<NamedLine> lines);
+// typedef PercentPair = (double percent, PercentGetter getter);
+typedef LinesDoAction = List<NamedLine> Function(DIRECTION_ENUM direction, String linesFatherName, List<NamedLine> lines);
+
+class Expression {
+  final PercentGetter percentGetter;
+  final LiteralGetter? literal;
+  const Expression(this.percentGetter, this.literal);
+  factory Expression.literal((double, PxUnit) lt) => Expression((Size size)=>0, (Size size)=>lt);
+  factory Expression.literalGetter(LiteralGetter getter) => Expression((Size size)=>0, getter);
+  factory Expression.percent(double value) => Expression((Size size)=>value, null);
+  factory Expression.percentGetter(PercentGetter getter) => Expression(getter, null);
+
+  operator +(Object o){
+    switch(o){
+      case NamedLine n:
+        return this + n.expression;
+      case (double, PxUnit) l:
+        return this + Expression.literal(l);
+      case LiteralGetter lg:
+        return this + Expression.literalGetter(lg);
+      case double p:
+        return this + Expression.percent(p);
+      case PercentGetter pg:
+        return this + Expression.percentGetter(pg);
+      case Expression e:
+        if(literal != null || e.literal != null){
+          return Expression((Size size)=>percentGetter(size) + e.percentGetter(size), (Size size){
+            final a = literal?.call(size); 
+            final b = e.literal?.call(size);
+            /// 单位相同或者只有一个值
+            if(a?.$2 == b?.$2 || a == null || b == null){
+              return (((a?.$1 ?? 0) + (b?.$1 ?? 0)), (a?.$2 ?? b?.$2)!);
+            }else
+            /// 单位里有 wpc 和 hpc 的统一到[w,h]pc
+            if(a.$2 == PxUnit.wpc){
+              return (a.$1 + pxUnitDoubleWidthPercentGetter(b)(size), PxUnit.wpc);
+            }else
+            if(a.$2 == PxUnit.hpc){
+              return (a.$1 + pxUnitDoubleHeightPercentGetter(b)(size), PxUnit.hpc);
+            }else
+            if(b.$2 == PxUnit.wpc){
+              return (pxUnitDoubleWidthPercentGetter(a)(size) + b.$1, PxUnit.wpc);
+            }else
+            if(b.$2 == PxUnit.hpc){
+              return (pxUnitDoubleWidthPercentGetter(a)(size) + b.$1, PxUnit.hpc);
+            /// 单位里没有 wpc 和 hpc 的统一到 px
+            }else{
+              return (pxUnitDoubleGetter(a)(size) + pxUnitDoubleGetter(b)(size), PxUnit.px);
+            }
+          });
+        }else{
+          return Expression((Size size)=>percentGetter(size) + e.percentGetter(size), null);
+        }
+    }
+  }
+
+  operator -(Object o){
+    switch(o){
+      case NamedLine n:
+        return this - n.expression;
+      case (double, PxUnit) l:
+        return this - Expression.literal(l);
+      case LiteralGetter lg:
+        return this - Expression.literalGetter(lg);
+      case double p:
+        return this - Expression.percent(p);
+      case PercentGetter pg:
+        return this - Expression.percentGetter(pg);
+      case Expression e:
+        if(literal != null || e.literal != null){
+          return Expression((Size size)=>percentGetter(size) - e.percentGetter(size), (Size size){
+            final a = literal?.call(size);
+            final b = e.literal?.call(size);
+            if(a?.$2 == b?.$2 || a == null || b == null){
+              return (((a?.$1 ?? 0) - (b?.$1 ?? 0)), (a?.$2 ?? b?.$2)!); 
+            /// 单位里有 wpc 和 hpc 的统一到[w,h]pc
+            }if(a.$2 == PxUnit.wpc){
+              return (a.$1 - pxUnitDoubleWidthPercentGetter(b)(size), PxUnit.wpc);
+            }else
+            if(a.$2 == PxUnit.hpc){
+              return (a.$1 - pxUnitDoubleHeightPercentGetter(b)(size), PxUnit.hpc);
+            }else
+            if(b.$2 == PxUnit.wpc){
+              return (pxUnitDoubleWidthPercentGetter(a)(size) - b.$1, PxUnit.wpc);
+            }else
+            if(b.$2 == PxUnit.hpc){
+              return (pxUnitDoubleWidthPercentGetter(a)(size) - b.$1, PxUnit.hpc);
+            /// 单位里没有 wpc 和 hpc 的统一到 px
+            }else{
+              return (pxUnitDoubleGetter(a)(size) - pxUnitDoubleGetter(b)(size), PxUnit.px);
+            }
+          });
+        }else{
+          return Expression((Size size)=>percentGetter(size) - e.percentGetter(size), null);
+        }
+    }
+  }
+
+  operator *(Object o){
+    switch(o){
+      case int i:
+        if(literal != null){
+          return Expression((Size size)=>percentGetter(size) * i, (Size size){
+            final a = literal!.call(size);
+            return (a.$1 * i, a.$2);
+          });
+        }else{
+          return Expression((Size size)=>percentGetter(size) * i, null);
+        }
+      case double d:
+        if(literal != null){
+          return Expression((Size size)=>percentGetter(size) * d, (Size size){
+            final a = literal!.call(size);
+            return (a.$1 * d, a.$2);
+          });
+        }else{
+          return Expression((Size size)=>percentGetter(size) * d, null);
+        }
+    }
+  }
+
+  operator /(Object o){
+    switch(o){
+      case int i:
+        if(literal != null){
+          return Expression((Size size)=>percentGetter(size) / i, (Size size){
+            final a = literal!.call(size);
+            return (a.$1 / i, a.$2);
+          });
+        }else{
+          return Expression((Size size)=>percentGetter(size) / i, null);
+        }
+      case double d:
+        if(literal != null){
+          return Expression((Size size)=>percentGetter(size) / d, (Size size){
+            final a = literal!.call(size);
+            return (a.$1 / d, a.$2);
+          });
+        }else{
+          return Expression((Size size)=>percentGetter(size) / d, null);
+        }
+    }
+  }
+
+  /// 全部转换为宽度的 百分比值
+  PercentGetter verticalWidthMergePercent(){
+    if(literal != null){
+      return (Size size){
+        return percentGetter(size) + pxUnitDoubleWidthPercentGetter(literal!.call(size))(size);
+      };
+    }else{
+      return percentGetter;
+    }
+  }
+  /// 全部转换为高度的 百分比值
+  PercentGetter horizontalHeightMergePercent(){
+    if(literal != null){
+      return (Size size){
+        return percentGetter(size) + pxUnitDoubleHeightPercentGetter(literal!.call(size))(size);
+      };
+    }else{
+      return percentGetter;
+    }
+  }
+
+  /// 纵线(横轴)转为字面量(单位值)表示，优先转成指定单位，其次是同一单位，否则转成 wpc(widthPercent)
+  LiteralGetter verticalWidthMergeLiteral([PxUnit? pu]){
+    return (Size size){
+        final target = literal?.call(size);
+        final unit = pu ?? target?.$2 ?? PxUnit.wpc;
+        return (widthPercentToPxUnitDoubleGetter(percentGetter(size), unit)(size).$1 + (literal?.call(size).$1 ?? 0), unit);
+    };
+  }
+  Expression verticalWidthMergeLiteralExpression([PxUnit? pu]) => Expression.literalGetter(verticalWidthMergeLiteral(pu));
+  /// 横线(纵轴)转为字面量(单位值)表示，优先转成指定单位，其次同一单位，否则转成 hpc(heightPercent)
+  LiteralGetter horizontalHeightMergeLiteral([PxUnit? pu]){
+    return (Size size){
+        final target = literal?.call(size);
+        final unit = pu ?? target?.$2 ?? PxUnit.hpc;
+        return (heightPercentToPxUnitDoubleGetter(percentGetter(size), unit)(size).$1 + (literal?.call(size).$1 ?? 0), unit);
+    };
+  }
+  Expression horizontalHeightMergeLiteralExpression([PxUnit? pu]) => Expression.literalGetter(horizontalHeightMergeLiteral(pu));
+  bool looseEqual(Expression other, [Size sampleSize = const Size.square(100)]){
+    return percentGetter(sampleSize) == other.percentGetter(sampleSize) && literal?.call(sampleSize) == other.literal?.call(sampleSize);
+  }
+
+  String looseEqualString(Expression other, [Size sampleSize = const Size.square(100)]){
+    double samplePercent = percentGetter(sampleSize);
+    double otherSamplePercent = other.percentGetter(sampleSize);
+    String percentEqual = samplePercent == otherSamplePercent ? '==' : '!='; 
+    (double, PxUnit)? sampleLiteral = literal?.call(sampleSize);
+    (double, PxUnit)? otherSampleLiteral = other.literal?.call(sampleSize);
+    String literalEqual = sampleLiteral == otherSampleLiteral ? '==' : '!=';
+    String finalEqual = samplePercent == otherSamplePercent && sampleLiteral == otherSampleLiteral ? 'true' : 'false';
+    return '''percent part:$samplePercent $percentEqual $otherSamplePercent
+literal part:$sampleLiteral $literalEqual $otherSampleLiteral
+result: $finalEqual
+''';
+  }
+
+}
 
 class NamedLine{
   final String name;
@@ -46,18 +268,38 @@ class NamedLine{
   final Paint? paint;
   final String? father;
   const NamedLine({required this.name, required this.percent, required this.percentGetter, this.paint, this.father, this.literalGetter, this.isGroup = false});
-  /// literal 和 percent 混合计算的结果值
-  factory NamedLine.result({required String name, Size initSize = const Size.square(1.0), required PercentGetter percentGetter, required LiteralGetter? literalGetter, Paint? paint, String? father})=>NamedLine(name: name, percent: percentGetter(initSize), percentGetter: percentGetter, literalGetter: literalGetter, paint: paint, father: father);
+  /// 表达式计算结果
+  factory NamedLine.expression(Expression expression, {required String name, Size sample = const Size.square(1.0), Paint? paint, String? father})=>NamedLine(name: name, percent: expression.percentGetter(sample), percentGetter: expression.percentGetter, literalGetter: expression.literal, paint: paint, father: father);
+  /// literal 和 percent 混合计算的结果值(使用expression代替)
+  // factory NamedLine.result({required String name, Size sample = const Size.square(1.0), required PercentGetter percentGetter, required LiteralGetter? literalGetter, Paint? paint, String? father})=>NamedLine(name: name, percent: percentGetter(sample), percentGetter: percentGetter, literalGetter: literalGetter, paint: paint, father: father);
   /// 支持 vh vw rpx 等相对单位值 以及 px 绝对值
-  factory NamedLine.literal({required String name, required (double, PxUnit) value, Paint? paint, String? father})=>NamedLine(name: name, percent: 0, percentGetter: (_)=> 0, literalGetter: (_)=>value, paint: paint, father: father);
+  factory NamedLine.literal((double, PxUnit) value, {required String name, Paint? paint, String? father})=>NamedLine(name: name, percent: 0, percentGetter: (_)=> 0, literalGetter: (_)=>value, paint: paint, father: father);
   /// vertical 创建的是 vw
   /// horizental 创建的是 vh
-  factory NamedLine.viewport({required String name, required double value, Paint? paint, String? father})=>NamedLine(name: name, percent: value / 100, percentGetter: (_)=> value / 100, paint: paint, father: father);
-  factory NamedLine.percent({required String name, required double value, Paint? paint, String? father})=>NamedLine(name: name, percent: value, percentGetter: (_)=>value, paint: paint, father: father);
-  factory NamedLine.getter({required String name, Size initSize = const Size.square(1.0), required PercentGetter value})=>NamedLine(name: name, percent: value(initSize), percentGetter: value);
-  factory NamedLine.copy({required NamedLine copy})=>NamedLine(name: copy.name, percent: copy.percent, percentGetter: copy.percentGetter, paint: copy.paint, father: copy.father, literalGetter: copy.literalGetter);
+  factory NamedLine.viewport(double vhOrVW, {required String name, Paint? paint, String? father})=>NamedLine(name: name, percent: vhOrVW / 100, percentGetter: (_)=> vhOrVW / 100, paint: paint, father: father);
+  factory NamedLine.percent(double value, {required String name, Paint? paint, String? father})=>NamedLine(name: name, percent: value, percentGetter: (_)=>value, paint: paint, father: father);
+  factory NamedLine.getter(PercentGetter value, {required String name, Size sample = const Size.square(1.0)})=>NamedLine(name: name, percent: value(sample), percentGetter: value);
+  factory NamedLine.copy(NamedLine copy)=>NamedLine(name: copy.name, percent: copy.percent, percentGetter: copy.percentGetter, paint: copy.paint, father: copy.father, literalGetter: copy.literalGetter);
   factory NamedLine.rename({required String rename,required NamedLine copy})=>NamedLine(name: rename, percent: copy.percent, percentGetter: copy.percentGetter, paint: copy.paint, father: copy.father, literalGetter: copy.literalGetter);
   factory NamedLine.repaint({required Paint repaint,required NamedLine copy})=>NamedLine(name: copy.name, percent: copy.percent, percentGetter: copy.percentGetter, paint: repaint, father: copy.father, literalGetter: copy.literalGetter);
+  
+  Expression get expression => Expression(percentGetter, literalGetter);
+
+  operator +(Object o){
+    return expression + o;
+  }
+
+  operator -(Object o){
+    return expression - o;
+  }
+
+  operator *(Object o){
+    return expression * o;
+  }
+
+  operator /(Object o){
+    return expression / o;
+  }
 
   /// 计算终值
   double computeWidth(Size size) => literalGetter != null ? pxUnitDoubleGetter(literalGetter!.call(size))(size) + percentGetter(size) * size.width : percentGetter(size) * size.width;
@@ -65,7 +307,16 @@ class NamedLine{
 
   bool looseEqual(Object other){
     if(identical(this, other)) return true;
-    return other is NamedLine && percent == other.percent && literalGetter?.call(Size.square(1)) == other.literalGetter?.call(Size.square(1));    
+    final _equal = other is NamedLine && expression.looseEqual(other.expression);    
+    // if(_equal){
+    //   ketchupDebug('lq:true,$this,$other');
+    // }
+    return _equal;
+  }
+
+  @override
+  String toString(){
+    return name;
   }
   
 }
@@ -73,10 +324,10 @@ class NamedLine{
 class GridContext extends BaseContext{
 
   Map<String, List<NamedLine>> verticalLines = {
-    NAME_CONTAINER: [NamedLine.percent(name: NAME_LEFT, value: 0.0), NamedLine.percent(name: NAME_MIDDLE, value: .5), NamedLine.percent(name: NAME_RIGHT, value: 1.0)],
+    NAME_CONTAINER: [NamedLine.percent(0.0, name: NAME_LEFT,), NamedLine.percent(.5, name: NAME_MIDDLE), NamedLine.percent(1.0, name: NAME_RIGHT)],
   };
   Map<String, List<NamedLine>> horizontalLines = {
-    NAME_CONTAINER: [NamedLine.percent(name: NAME_TOP, value: 0.0), NamedLine.percent(name: NAME_MIDDLE, value: .5), NamedLine.percent(name: NAME_BOTTOM, value: 1.0)]
+    NAME_CONTAINER: [NamedLine.percent(0.0, name: NAME_TOP), NamedLine.percent(.5, name: NAME_MIDDLE), NamedLine.percent(1.0, name: NAME_BOTTOM)]
   };
 
   List<NamedLine> createAddtoVertical(String name, List<NamedLine> Function() ifAbsent){
@@ -106,11 +357,13 @@ class GridContext extends BaseContext{
   List<List<RectGetter>> createRectGetterMatrix({bool reverseX = false, bool reverseY = false, bool looseEqualIgnored = false, double xMinFactor = 0.00001, double yMinFactor = 0.00001,
                     List<String> includes = const [], List<String> excludes = const [], Size? sampleSortSize}){
     var vLines = lines(DIRECTION.vertical, includes: includes, excludes: excludes);
-        if(sampleSortSize != null) vLines = useSampleWidthSorted(sampleSortSize, vLines);
-        vLines = reverseX ? vLines.reversed.toList(): vLines;
+    if(sampleSortSize != null) vLines = useSampleWidthSorted(sampleSortSize, vLines);
+    vLines = reverseX ? vLines.reversed.toList(): vLines;
+    // ketchupDebug(vLines);
     var hLines = lines(DIRECTION.horizontal, includes: includes, excludes: excludes);
-        if(sampleSortSize != null) hLines = useSampleHeightSorted(sampleSortSize, hLines);
-        hLines = reverseY ? hLines.reversed.toList(): hLines;
+    if(sampleSortSize != null) hLines = useSampleHeightSorted(sampleSortSize, hLines);
+    hLines = reverseY ? hLines.reversed.toList(): hLines;
+    // ketchupDebug(hLines);
     // assert(gameDebug(vLines).length >= 2 && gameDebug(hLines).length >= 2);
     assert(vLines.length >= 2 && hLines.length >= 2);
     List<List<RectGetter>> retColumns = [];
@@ -146,21 +399,21 @@ class GridContext extends BaseContext{
     List<String> includes = const [], 
     List<String> excludes = const []}){
     List<NamedLine> ret = [];
-    if(direction == DIRECTION.all || direction == DIRECTION.vertical){
+    if(direction.contains(DIRECTION_ENUM.vertical)){
       for (var me in verticalLines.entries) {
         /// 默认全部模式 || 剔除模式 || 包含模式 
         if(includes.isEmpty && (excludes.isEmpty || excludes.isNotEmpty && !excludes.contains(me.key)) || 
           includes.isNotEmpty && includes.contains(me.key)){
-          ret.addAll(doAction(DIRECTION.vertical, me.key, me.value));
+          ret.addAll(doAction(DIRECTION_ENUM.vertical, me.key, me.value));
         }
       }
     }
-    if(direction == DIRECTION.all || direction == DIRECTION.horizontal){
+    if(direction.contains(DIRECTION_ENUM.horizontal)){
       for (var me in horizontalLines.entries) {
         /// 默认全部模式 || 剔除模式 || 包含模式 
         if(includes.isEmpty && (excludes.isEmpty || excludes.isNotEmpty && !excludes.contains(me.key)) || 
           includes.isNotEmpty && includes.contains(me.key)){
-          ret.addAll(doAction(DIRECTION.horizontal, me.key, me.value));
+          ret.addAll(doAction(DIRECTION_ENUM.horizontal, me.key, me.value));
         }
       }
     }
@@ -175,10 +428,13 @@ class GridContext extends BaseContext{
     return verticalLines.containsKey(tagName) || horizontalLines.containsKey(tagName);
   }
 
-  Map<String, List<NamedLine>> directionLines(DIRECTION direction){
-    if(DIRECTION.horizontal == direction) return horizontalLines;
-    if(DIRECTION.vertical == direction) return verticalLines;
-    throw Exception('DIRECTION.all should not be use here.');
+  Map<String, List<NamedLine>> directionLines(DIRECTION_ENUM direction){
+    switch(direction){
+      case DIRECTION_ENUM.horizontal:
+        return horizontalLines;
+      case DIRECTION_ENUM.vertical:
+        return verticalLines;
+    }
   }
   
   List<NamedLine> lines(DIRECTION direction, {List<String> includes = const [], List<String> excludes = const []}){
@@ -186,7 +442,7 @@ class GridContext extends BaseContext{
   }
 
   List<NamedLine> linesDoPaint(DIRECTION direction, Paint paint, {List<String> includes = const [], List<String> excludes = const []}){
-    return linesDo(direction, (DIRECTION d, name, _){
+    return linesDo(direction, (DIRECTION_ENUM d, name, _){
       // if (kDebugMode) {
       //   ketchupDebug('Model d: $d, name: $name, list.paint: ${_[0].paint}, paint: $paint');
       // }
@@ -197,8 +453,8 @@ class GridContext extends BaseContext{
   }
 
   /// 模糊查询(默认查询全部轴向)
-  List<NamedLine> queryLines(String queryString, [DIRECTION direction = DIRECTION.all]){
-    return lines(direction).expand<NamedLine>((NamedLine line){
+  List<NamedLine> queryLines(String queryString, [DIRECTION_ENUM direction = DIRECTION_ENUM.vertical]){
+    return lines(DIRECTION.from(direction)).expand<NamedLine>((NamedLine line){
       if(line.name.contains(queryString)){
         return [line];
       }else {
@@ -207,16 +463,24 @@ class GridContext extends BaseContext{
       }).toList();
   }
 
-  NamedLine queryFirst(String queryString, [DIRECTION direction = DIRECTION.all]){
+  NamedLine queryFirst(String queryString, DIRECTION_ENUM direction){
     return queryLines(queryString, direction).first;
   }
 
-  NamedLine queryLast(String queryString, [DIRECTION direction = DIRECTION.all]){
+  NamedLine queryLast(String queryString, DIRECTION_ENUM direction){
     return queryLines(queryString, direction).last;
   }
 
-  List<NamedLine> qureyCouple(String queryString, [DIRECTION direction = DIRECTION.all]){
-    return queryLines(queryString, direction).sublist(0, 2);
+  List<NamedLine> qureyFirstCouple(String queryString, DIRECTION_ENUM direction){
+    final query = queryLines(queryString, direction);
+    assert(query.length > 1);
+    return [query.first, query.last];
+  }
+  
+  List<NamedLine> qureySecondCouple(String queryString, DIRECTION_ENUM direction){
+    final query = queryLines(queryString, direction);
+    assert(query.length > 3);
+    return [query[1], query[query.length - 2]];
   }
 
   /// 快表
@@ -251,15 +515,15 @@ class GridContext extends BaseContext{
         ..addAll(samplePlusPercent >0.0 && line.percent + samplePlusPercent < 1.0 ?
           [
             NamedLine.getter(
+              (size)=>line.percentGetter(size) + plusGetter(size),
               name: '(${line.name})+$NAME_MARGIN:$samplePlusPercent',
-              value: (size)=>line.percentGetter(size) + plusGetter(size)
             )
           ] : [])
         ..addAll(sampleMinusPercent >0.0 && line.percent-sampleMinusPercent < 1.0 ?
           [
             NamedLine.getter(
+              (size)=>line.percentGetter(size) - minusGetter(size),
               name: '(${line.name})-$NAME_MARGIN:$sampleMinusPercent',
-              value: (size)=>line.percentGetter(size) - minusGetter(size)
             )
           ] : []);
         
@@ -272,35 +536,41 @@ class GridContext extends BaseContext{
     NamedLine? fromStartLine, 
     NamedLine? toEndLine,
     bool includeStartEnd = false }){
-    NamedLine fromStart = fromStartLine ?? NamedLine.percent(name: NAME_START, value: 0.0);
-    NamedLine toEnd = toEndLine ?? NamedLine.percent(name: NAME_END, value: 1.0);
+    NamedLine fromStart = fromStartLine ?? NamedLine.percent(0.0, name: NAME_START);
+    NamedLine toEnd = toEndLine ?? NamedLine.percent(1.0, name: NAME_END);
     // assert(marginPercent < toEnd.percent - fromStart.percent);
     // if(fromStart.percent + marginPercent >= toEnd.percent - marginPercent) return [];
-    late PxUnitDouble tempLiteral;
+    // late PxUnitDouble tempLiteral;
     List<NamedLine> excludeStartEnd = [
-        NamedLine.result(
+        NamedLine.expression(fromStart + literal, 
           name: '$NAME_MARGIN-$NAME_START:$literal',
-          percentGetter: fromStart.percentGetter,
-          literalGetter: fromStart.literalGetter != null ? 
-            (Size size) => ((tempLiteral = fromStart.literalGetter!(size)).$2 == literal.$2 ? 
-              (tempLiteral.$1 + literal.$1, literal.$2) : 
-              (pxUnitDoubleGetter(tempLiteral)(size) + pxUnitDoubleGetter(literal)(size), PxUnit.px)) : 
-            (Size size) => literal,
         ),
-        NamedLine.result(
+        // NamedLine.result(
+        //   name: '$NAME_MARGIN-$NAME_START:$literal',
+        //   percentGetter: fromStart.percentGetter,
+        //   literalGetter: fromStart.literalGetter != null ? 
+        //     (Size size) => ((tempLiteral = fromStart.literalGetter!(size)).$2 == literal.$2 ? 
+        //       (tempLiteral.$1 + literal.$1, literal.$2) : 
+        //       (pxUnitDoubleGetter(tempLiteral)(size) + pxUnitDoubleGetter(literal)(size), PxUnit.px)) : 
+        //     (Size size) => literal,
+        // ),
+        NamedLine.expression(toEnd - literal, 
           name: '$NAME_MARGIN-$NAME_END:$literal',
-          percentGetter: toEnd.percentGetter,
-          literalGetter: toEnd.literalGetter != null ? 
-            (Size size)=> ((tempLiteral = toEnd.literalGetter!(size)).$2 == literal.$2 ? 
-              (tempLiteral.$1 - literal.$1, literal.$2) : 
-              (pxUnitDoubleGetter(tempLiteral)(size) - pxUnitDoubleGetter(literal)(size), PxUnit.px)) : 
-            (Size size) => ( - literal.$1, literal.$2 ),
-        )
+        ),
+        // NamedLine.result(
+        //   name: '$NAME_MARGIN-$NAME_END:$literal',
+        //   percentGetter: toEnd.percentGetter,
+        //   literalGetter: toEnd.literalGetter != null ? 
+        //     (Size size)=> ((tempLiteral = toEnd.literalGetter!(size)).$2 == literal.$2 ? 
+        //       (tempLiteral.$1 - literal.$1, literal.$2) : 
+        //       (pxUnitDoubleGetter(tempLiteral)(size) - pxUnitDoubleGetter(literal)(size), PxUnit.px)) : 
+        //     (Size size) => ( - literal.$1, literal.$2 ),
+        // )
       ];
     return includeStartEnd ? [
-      NamedLine.rename(rename: '$NAME_MARGIN-$NAME_START', copy: fromStart),
+      NamedLine.rename(rename: '$NAME_MARGIN-$NAME_START-$NAME_RENAME-${fromStart.name}', copy: fromStart),
       ...excludeStartEnd,
-      NamedLine.rename(rename: '$NAME_MARGIN-$NAME_END', copy: toEnd)
+      NamedLine.rename(rename: '$NAME_MARGIN-$NAME_END-$NAME_RENAME-${toEnd.name}', copy: toEnd)
     ] : excludeStartEnd;
   }
   
@@ -309,22 +579,28 @@ class GridContext extends BaseContext{
     NamedLine? fromStartLine, 
     NamedLine? toEndLine,
     bool includeStartEnd = false }){
-    NamedLine fromStart = fromStartLine ?? NamedLine.percent(name: NAME_START, value: 0.0);
-    NamedLine toEnd = toEndLine ?? NamedLine.percent(name: NAME_END, value: 1.0);
+    NamedLine fromStart = fromStartLine ?? NamedLine.percent(0.0, name: NAME_START);
+    NamedLine toEnd = toEndLine ?? NamedLine.percent(1.0, name: NAME_END);
     // assert(marginPercent < toEnd.percent - fromStart.percent);
     // if(fromStart.percent + marginPercent >= toEnd.percent - marginPercent) return [];
     var sampleMarginPercent = marginPercent(Size.square(1.0));
     List<NamedLine> excludeStartEnd = [
-        NamedLine.result(
+        NamedLine.expression(fromStart + marginPercent, 
           name: '$NAME_MARGIN-$NAME_START:(1/1)=>$sampleMarginPercent',
-          percentGetter: (size)=>fromStart.percentGetter(size) + marginPercent(size),
-          literalGetter: fromStart.literalGetter
         ),
-        NamedLine.result(
+        // NamedLine.result(
+        //   name: '$NAME_MARGIN-$NAME_START:(1/1)=>$sampleMarginPercent',
+        //   percentGetter: (size)=>fromStart.percentGetter(size) + marginPercent(size),
+        //   literalGetter: fromStart.literalGetter
+        // ),
+        NamedLine.expression(toEnd - marginPercent, 
           name: '$NAME_MARGIN-$NAME_END:(1/1)=>$sampleMarginPercent',
-          percentGetter: (size)=>toEnd.percentGetter(size) - marginPercent(size),
-          literalGetter: toEnd.literalGetter
-        )
+        ),
+        // NamedLine.result(
+        //   name: '$NAME_MARGIN-$NAME_END:(1/1)=>$sampleMarginPercent',
+        //   percentGetter: (size)=>toEnd.percentGetter(size) - marginPercent(size),
+        //   literalGetter: toEnd.literalGetter
+        // )
       ];
     return includeStartEnd ? [
       NamedLine.rename(rename: '$NAME_MARGIN-$NAME_START', copy: fromStart),
@@ -338,18 +614,18 @@ class GridContext extends BaseContext{
     NamedLine? fromStartLine,
     NamedLine? toEndLine,
     bool includeStartEnd = false}){
-    NamedLine fromStart = fromStartLine ?? NamedLine.percent(name: NAME_START, value: 0.0);
-    NamedLine toEnd = toEndLine ?? NamedLine.percent(name: NAME_END, value: 1.0);
+    NamedLine fromStart = fromStartLine ?? NamedLine.percent(0.0, name: NAME_START);
+    NamedLine toEnd = toEndLine ?? NamedLine.percent(1.0, name: NAME_END);
     goldenStartPercentGetter(size)=> 0.382 * (toEnd.percentGetter(size) - fromStart.percentGetter(size)) + fromStart.percentGetter(size);
     goldenEndPercentGetter(size)=> 0.618 * (toEnd.percentGetter(size) - fromStart.percentGetter(size)) + fromStart.percentGetter(size);
     List<NamedLine> excludeStartEnd = [
       NamedLine.getter(
+        goldenStartPercentGetter,
         name: '$GOLDEN_RATIO_DIVIDES-$NAME_START:(1/1)=>${goldenStartPercentGetter(Size.square(1.0))}',
-        value: goldenStartPercentGetter
       ),
       NamedLine.getter(
+        goldenEndPercentGetter,
         name: '$GOLDEN_RATIO_DIVIDES-$NAME_END:(1/1)=>${goldenEndPercentGetter(Size.square(1.0))}',
-        value: goldenEndPercentGetter
       )
     ];
     return includeStartEnd ? [
@@ -374,15 +650,15 @@ class GridContext extends BaseContext{
     NamedLine? fromStartLine,
     NamedLine? toEndLine,
     bool includeStartEnd = false}){
-    NamedLine fromStart = fromStartLine ?? NamedLine.percent(name: NAME_START, value: 0.0);
-    NamedLine toEnd = toEndLine ?? NamedLine.percent(name: NAME_END, value: 1.0);
+    NamedLine fromStart = fromStartLine ?? NamedLine.percent(0.0, name: NAME_START);
+    NamedLine toEnd = toEndLine ?? NamedLine.percent(1.0, name: NAME_END);
     assert(custom.isNotEmpty);
     var excludeStartEnd =  custom.indexed.map<NamedLine>((indexed){
       // var stepPercent = (toEnd.percent - fromStart.percent) / count;
       percentGetter(size) => (toEnd.percentGetter(size) - fromStart.percentGetter(size)) * indexed.$2;
       return NamedLine.getter(
+        percentGetter,
         name: '${indexed.$1}/$NAME_CUSTOM:(1/1)=>${percentGetter(Size.square(1.0))}',
-        value: percentGetter
       );
     }).toList();
     return includeStartEnd ? [
@@ -399,23 +675,60 @@ class GridContext extends BaseContext{
   static List<NamedLine> createPercentDivides(int count, {
     NamedLine? fromStartLine,
     NamedLine? toEndLine,
-    bool includeStartEnd = false}){
-    NamedLine fromStart = fromStartLine ?? NamedLine.percent(name: NAME_START, value: 0.0);
-    NamedLine toEnd = toEndLine ?? NamedLine.percent(name: NAME_END, value: 1.0);
+    END_POINT endPoint = END_POINT.exclude_start_end}){
+    NamedLine fromStart = fromStartLine ?? NamedLine.percent(0.0, name: NAME_START);
+    NamedLine toEnd = toEndLine ?? NamedLine.percent(1.0, name: NAME_END);
     assert(count >= 2);
+    // var excludeStartEnd = List.generate(count - 1, (index){
+    //   // var stepPercent = (toEnd.percent - fromStart.percent) / count;
+    //   percentGetter(size) => (index + 1) * (toEnd.percentGetter(size) - fromStart.percentGetter(size)) / count + fromStart.percentGetter(size);
+    //   return NamedLine.getter(
+    //     percentGetter,
+    //     name: '${index + 1}/$count$NAME_DIVIDE:(1/1)=>${percentGetter(Size.square(1.0))}',
+    //   );
+    // });
     var excludeStartEnd = List.generate(count - 1, (index){
-      // var stepPercent = (toEnd.percent - fromStart.percent) / count;
-      percentGetter(size) => (index + 1) * (toEnd.percentGetter(size) - fromStart.percentGetter(size)) / count + fromStart.percentGetter(size);
-      return NamedLine.getter(
-        name: '${index + 1}/$count$NAME_DIVIDE:(1/1)=>${percentGetter(Size.square(1.0))}',
-        value: percentGetter
+      return NamedLine.expression(fromStart + (toEnd - fromStart) * ((index + 1) / count),
+        name: '${index + 1}/$count:$NAME_DIVIDE}',
       );
     });
-    return includeStartEnd ? [
-      NamedLine.rename(rename: '0/$count$NAME_DIVIDE', copy: fromStart),
+    return [
+      if(endPoint == END_POINT.include_start_only || endPoint == END_POINT.include_start_end)
+        NamedLine.rename(rename: '0/$count$NAME_DIVIDE', copy: fromStart),
       ... excludeStartEnd, 
-      NamedLine.rename(rename: '$count/$count$NAME_DIVIDE', copy: toEnd), 
-    ]: excludeStartEnd;
+      if(endPoint == END_POINT.include_end_only || endPoint == END_POINT.include_start_end)
+        NamedLine.rename(rename: '$count/$count$NAME_DIVIDE', copy: toEnd), 
+    ];
+  }
+
+  static List<NamedLine> createExpressionStaticDivides(Expression staticExpr, double count, {(DIRECTION_ENUM, Size)? infinitySample, 
+    NamedLine? fromStartLine,
+    NamedLine? toEndLine,
+    END_POINT endPoint = END_POINT.exclude_start_end}){
+    assert(count != double.infinity || infinitySample != null);
+    NamedLine fromStart = fromStartLine ?? NamedLine.percent(0.0, name: NAME_START);
+    NamedLine toEnd = toEndLine ?? NamedLine.percent(1.0, name: NAME_END);
+    if(count == double.infinity){
+      switch(infinitySample!.$1){
+        case DIRECTION_ENUM.vertical:
+          count = ((toEnd - fromStart) as Expression).verticalWidthMergeLiteral(PxUnit.wpc)(infinitySample.$2).$1 / staticExpr.verticalWidthMergeLiteral(PxUnit.wpc)(infinitySample.$2).$1;
+          break;
+        case DIRECTION_ENUM.horizontal:
+          count = ((toEnd - fromStart) as Expression).horizontalHeightMergeLiteral(PxUnit.hpc)(infinitySample.$2).$1 / staticExpr.horizontalHeightMergeLiteral(PxUnit.hpc)(infinitySample.$2).$1;
+      }
+    }
+    List<NamedLine> excludeStartEnd = List.generate(count.floor(), (index){
+      var plusExpr = fromStart + staticExpr * (index + 1); 
+      return NamedLine.expression(plusExpr, name: '$STATIC_DIVIDES-${index+1}');
+    });
+
+    return [
+      if(endPoint == END_POINT.include_start_only || endPoint == END_POINT.include_start_end)
+        NamedLine.rename(rename: '$STATIC_DIVIDES-$NAME_START', copy: fromStart),
+      ...excludeStartEnd,
+      if(endPoint == END_POINT.include_end_only || endPoint == END_POINT.include_start_end)
+        NamedLine.rename(rename: '$STATIC_DIVIDES-$NAME_END', copy: toEnd),
+    ];
   }
 
   /// 创建定宽等分线(start end可以颠倒)
@@ -425,8 +738,8 @@ class GridContext extends BaseContext{
     NamedLine? fromStartLine,
     NamedLine? toEndLine,
     bool includeStartEnd = false}){
-    NamedLine fromStart = fromStartLine ?? NamedLine.percent(name: NAME_START, value: 0.0);
-    NamedLine toEnd = toEndLine ?? NamedLine.percent(name: NAME_END, value: 1.0);
+    NamedLine fromStart = fromStartLine ?? NamedLine.percent(0.0, name: NAME_START);
+    NamedLine toEnd = toEndLine ?? NamedLine.percent(1.0, name: NAME_END);
     assert(staticPercent >0 && staticPercent <1);
     if(fromStart.percent < toEnd.percent){
       List<NamedLine> excludeStartEnd;
@@ -436,8 +749,8 @@ class GridContext extends BaseContext{
         excludeStartEnd = List.generate(min<double>(((toEnd.percent - fromStart.percent) / staticPercent), count).floor(), (index){
           var plusPercent = fromStart.percent + (index + 1) * staticPercent; 
           return NamedLine.percent(
+            plusPercent,
             name: '$STATIC_DIVIDES-${index+1}:+$staticPercent:$plusPercent',
-            value: plusPercent
           );
         });
       }
@@ -456,8 +769,8 @@ class GridContext extends BaseContext{
     NamedLine? fromEndLine,
     NamedLine? toStartLine,
     bool includeStartEnd = false}){
-    NamedLine fromStart = fromEndLine ?? NamedLine.percent(name: NAME_END, value: 1.0);
-    NamedLine toEnd = toStartLine ?? NamedLine.percent(name: NAME_START, value: 0.0);
+    NamedLine fromStart = fromEndLine ?? NamedLine.percent(1.0, name: NAME_END);
+    NamedLine toEnd = toStartLine ?? NamedLine.percent(0.0, name: NAME_START);
     assert(staticPercent >0 && staticPercent <1);
     List<NamedLine> excludeStartEnd;
     if(toEnd.percent + staticPercent > fromStart.percent ){
@@ -466,8 +779,8 @@ class GridContext extends BaseContext{
       excludeStartEnd = List.generate(min<double>(((fromStart.percent - toEnd.percent) / staticPercent), count).floor(), (index){
         var minusPercent = fromStart.percent - (index + 1) * staticPercent;
         return NamedLine.percent(
+          minusPercent,
           name: '$STATIC_DIVIDES-${index+1}:-$staticPercent:$minusPercent',
-          value: minusPercent
         );
       /// 反序输出确保从小到大排列
       }).reversed.toList();
@@ -479,4 +792,39 @@ class GridContext extends BaseContext{
       NamedLine.rename(rename: '$STATIC_DIVIDES-$NAME_START', copy: fromStart),
     ]: excludeStartEnd;
   }
+
+  static List<NamedLine> createReverseExpressionStaticDivides(Expression staticExpr, double count, {(DIRECTION_ENUM, Size, PxUnit?)? infinitySample, 
+    NamedLine? fromEndLine,
+    NamedLine? toStartLine,
+    END_POINT endPoint = END_POINT.exclude_start_end,
+  }){
+    
+    assert(count != double.infinity || infinitySample != null);
+    NamedLine fromStart = fromEndLine ?? NamedLine.percent(1.0, name: NAME_END);
+    NamedLine toEnd = toStartLine ?? NamedLine.percent(0.0, name: NAME_START);
+    if(count == double.infinity){
+      switch(infinitySample!.$1){
+        case DIRECTION_ENUM.vertical:
+          count = ((fromStart - toEnd) as Expression).verticalWidthMergeLiteral(infinitySample.$3 ?? PxUnit.wpc)(infinitySample.$2).$1 / staticExpr.verticalWidthMergeLiteral(infinitySample.$3 ?? PxUnit.wpc)(infinitySample.$2).$1;
+          break;
+        case DIRECTION_ENUM.horizontal:
+          count = ((fromStart - toEnd) as Expression).horizontalHeightMergeLiteral(infinitySample.$3 ?? PxUnit.hpc)(infinitySample.$2).$1 / staticExpr.horizontalHeightMergeLiteral(infinitySample.$3 ?? PxUnit.hpc)(infinitySample.$2).$1;
+      }
+    }
+    List<NamedLine> excludeStartEnd = List.generate(count.floor(), (index){
+      var minusExpr = fromStart - staticExpr * (index + 1); 
+      return NamedLine.expression(minusExpr, name: '$STATIC_DIVIDES-${index+1}');
+    /// 反序输出确保从小到大排列
+    }).reversed.toList();
+    
+    /// 起始点也应该反序
+    return [
+      if(endPoint == END_POINT.include_end_only || endPoint == END_POINT.include_start_end) 
+        NamedLine.rename(rename: '$STATIC_DIVIDES-$NAME_END', copy: toEnd),
+      ...excludeStartEnd,
+      if(endPoint == END_POINT.include_start_only || endPoint == END_POINT.include_start_end) 
+        NamedLine.rename(rename: '$STATIC_DIVIDES-$NAME_START', copy: fromStart),
+    ];
+  }
+
 }

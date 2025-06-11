@@ -15,20 +15,20 @@ abstract class PageLifeCycle{
   void onCreate();
   void onResume();
   void onScreenWillChange(ScreenPT willChangePT);
-  AnimationController willPlayAnimated({required ScreenPT? from,required ScreenPT to});
+  AnimationController willPlayAnimated({ScreenPT? fromPT, required ScreenPT toPT, required AnimationController animCtrl});
   void onMeasured(ScreenContext screen);
   void onPause();
   void onDestroy();
+  List<Widget>? screenBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
+  Widget build(BuildContext context);
 }
 
 /// 带有生命周期的页面
 abstract mixin class KetchupRoutePage implements PageLifeCycle{
   void onStateInit(void Function(VoidCallback c, [String? d]) stateUpdater);
-  List<Widget>? screenBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
-  Widget build(BuildContext context);
   
   @override
-  AnimationController willPlayAnimated({ScreenPT? from, required ScreenPT to, AnimationController? animCtr}) {
+  AnimationController willPlayAnimated({ScreenPT? fromPT, required ScreenPT toPT, required AnimationController animCtrl}) {
     // TODO: implement willPlayAnimated
     throw UnimplementedError();
   }

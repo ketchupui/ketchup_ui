@@ -10,6 +10,7 @@ abstract class ContextAccessor{
   GridContext get grid;
   LayerContext get fgLayers;
   LayerContext get bgLayers;
+  Size get size;
   // void Function(VoidCallback) get update;
   void Function(VoidCallback, [String? d]) get update;
   void lazyUpdate(VoidCallback c, [String? d, VoidCallback? afterUpdate]);

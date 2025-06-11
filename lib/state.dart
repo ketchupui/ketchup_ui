@@ -452,14 +452,24 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
                     child: fullscreenAspectRatioRow(
                       fullScreenAspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
                       child: 
-                        CustomPaint(
-                          painter: LayerPainter(context: bgLayers, accessor: this),
-                          foregroundPainter: LayerPainter(context: fgLayers, accessor: this),
-                          child: Row(children: screen.currentPatternNullable == PT_CELL ? 
-                            createSingleColumnCells(context: context, rowColumn: widget.rowColumn, core: screen) :
-                            createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!)
-                          ),
+                      /// 根据 CHATGPT 建议修改(高效动画版)
+                        Stack(
+                          children: [
+                            CustomPaint(painter: LayerPainter(context: bgLayers, accessor: this), size:Size.infinite),
+                            Positioned.fill(child: Row(children: screen.currentPatternNullable == PT_CELL ? 
+                              createSingleColumnCells(context: context, rowColumn: widget.rowColumn, core: screen) :
+                              createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!))),
+                            CustomPaint(painter: LayerPainter(context: fgLayers, accessor: this), size:Size.infinite),
+                          ]
                         )
+                        // CustomPaint(
+                        //   painter: LayerPainter(context: bgLayers, accessor: this),
+                        //   foregroundPainter: LayerPainter(context: fgLayers, accessor: this),
+                        //   child: Row(children: screen.currentPatternNullable == PT_CELL ? 
+                        //     createSingleColumnCells(context: context, rowColumn: widget.rowColumn, core: screen) :
+                        //     createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!)
+                        //   ),
+                        // )
                       )
                     )
                   )

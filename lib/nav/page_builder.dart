@@ -102,7 +102,7 @@ class SimpleMultiColumnsImp extends MultiColumns{
   }
 }
 
-abstract class NavigatorPageWidget extends StatelessWidget with KetchupRoutePage, MultiColumns {}
+abstract class NavigatorPageWidget extends StatelessWidget with KetchupRoutePage, MultiColumns implements PageLifeCycle{}
 
 abstract class NavigatorPage extends KetchupRoutePage with MultiColumns {
 
@@ -171,11 +171,6 @@ class TestableRoutePage extends NavigatorPage with vConsole{
   
   @override
   List<int> availableColumns;
-  
-  @override
-  int weight(int columns, int newPageLevel, bool isNewPage) {
-    return newPageLevel;
-  }
   
   @override
   void onMeasured(ScreenContext screen) {
