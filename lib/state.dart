@@ -155,6 +155,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
   @override
   LayerContext get bgLayers => widget.bgLayers;
   
+  @override
   Size get size => widget.size;
 
   Size? get screenSingleAspectRatioSize => widget.singleAspectRatio;
