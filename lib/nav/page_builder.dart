@@ -102,7 +102,9 @@ class SimpleMultiColumnsImp extends MultiColumns{
   }
 }
 
-abstract class NavigatorPageWidget extends StatelessWidget with KetchupRoutePage, MultiColumns implements PageLifeCycle{}
+abstract class NavPageWidget extends StatelessWidget with KetchupRoutePage, MultiColumns implements PageLifeCycle{
+  const NavPageWidget({super.key});
+}
 
 abstract class NavigatorPage extends KetchupRoutePage with MultiColumns {
 

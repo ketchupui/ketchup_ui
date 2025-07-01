@@ -10,9 +10,12 @@ typedef DrawEachCallbackReturnCallback = DrawEachCallbackReturn Function(DrawEac
 
 class GridPainter extends ContextPainter{
   
+  List<double> Function(Size size)? verExtra;
+  List<double> Function(Size size)? horExtra;
+
   @override
   final GridContext context;
-  GridPainter({required this.context});
+  GridPainter({required this.context, this.verExtra, this.horExtra});
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
@@ -67,6 +70,18 @@ class GridPainter extends ContextPainter{
           );
         }
     ));
+
+    /// 6月18日绘制拼屏线,6月21日新增横向线
+    if(GridContext.gridNeedPaintSplitLine){
+      verExtra?.call(size).forEach((ver)=>
+        canvas.drawLine(
+          Offset(ver, 0), Offset(ver, height), (Paint()..color = Colors.purpleAccent.kDarken(.5) ..strokeWidth = .5)
+        ));
+      horExtra?.call(size).forEach((hor)=>
+        canvas.drawLine(
+          Offset(0, hor), Offset(width, hor), (Paint()..color = Colors.purpleAccent.kDarken(.5) ..strokeWidth = .5)
+        ));
+    }
   }
   
 }

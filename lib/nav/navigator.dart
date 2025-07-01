@@ -44,7 +44,8 @@ abstract class NavigatorCore<T extends MultiColumns> with vConsole {
   int get screenColumn;
 
   /// 非连续内容扩展算法 https://immvpc32u2.feishu.cn/docx/SlLddeDrJoCW9ox4igYcPNSTnSd?from=from_copylink
-  NavCtntPair<T> expand(NavCtntPair<T> currentPages){
+  /// 6月22日改为可伸展可折叠(新增折叠)，可返回 null 表示不可伸缩
+  NavCtntPair<T>? expandCollapse(NavCtntPair<T> currentPages, int screenColumn){
     NavPairList<T> navigates = currentPages.$1;
     NavPairList<T> contents = currentPages.$2;
     // var current = [...navigates, ...contents ];
@@ -73,9 +74,10 @@ abstract class NavigatorCore<T extends MultiColumns> with vConsole {
       }
     }
 
-    ExpandAvbPtns target = recursiveCombine([ ...contentsExpandables, ...navigatesExpandables.reversed ]).firstWhere((ExpandAvbPtns test){
+    ExpandAvbPtns? target = recursiveCombine([ ...contentsExpandables, ...navigatesExpandables.reversed ]).firstWhereOrNull((ExpandAvbPtns test){
       return test.sum <= screenColumn;
     });
+    if(target == null) return null;
 
     var navColumns = target.sublist(contentsExpandables.length).reversed.toList();
     var ctnColumns = target.sublist(0, contentsExpandables.length);
@@ -83,14 +85,14 @@ abstract class NavigatorCore<T extends MultiColumns> with vConsole {
     return (navigates.mapIndexed((i, nav)=>(nav.$1, navColumns[i].toInt(), nav.$3)).toList(), 
             contents.mapIndexed((i, ctn)=>(ctn.$1, ctnColumns[i].toInt(), ctn.$3)).toList());
   }
-
+  
   List<SingleAvbCol> indexedExpAvbCols(NavPairList<T> nav) => nav.map((ctn)=>availableColumns(ctn.$3.availableColumns, ctn.$1, ctn.$2)).toList();
 
-  String expandString(NavCtntPair<T> currentPages) => expand(currentPages).toString();
+  String expandString(NavCtntPair<T> currentPages) => expandCollapse(currentPages, screenColumn).toString();
 
   (NavCtntPair<T>, NavPairList<T>) shiftExpand(NavCtntPair<T> currentPages, NavPair<T> insertPage){
     var shiftPair = shift(currentPages, insertPage);
-    return (expand(shiftPair.$1), shiftPair.$2);
+    return (expandCollapse(shiftPair.$1, screenColumn)!, shiftPair.$2);
   }
 
   String shiftExpandString(NavCtntPair<T> currentPages, NavPair<T> insertPage)=>shiftExpand(currentPages, insertPage).$1.toString();
@@ -333,6 +335,18 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
 
   NavCtntPair<CachePage> __currentPair = ([],[]);
 
+  /// 6月22日，加强交互性，修改栏目数之前判断是否合法
+  bool canCollapse(int screenColumn){
+    assert(screenColumn >0 && screenColumn < this.screenColumn);
+    return expandCollapse(__currentPair, screenColumn) != null; 
+  }
+
+  /// 适应屏幕栏目数调整{
+  void adjustScreenColumnChange([ String? debugInfo, AnimationController? animCtrl, ]){
+    __currentPair = expandCollapse(__currentPair, screenColumn)!;
+    _innerMergeWillChangePT(null, debugInfo, animCtrl);
+  }
+
   void clear(){
       __historyRoutes.clear();
       __forwardRoutes.clear();
@@ -420,7 +434,7 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
   /// 情况6：被动，当前有，权重不够或者处于权重策略需要换位置或收缩，取出当前并执行 onScreenWillChange - onScreenChanged
   /// 情况7：被动，当前没有，缓存有，由于缓存已满，被迫剔除缓存前 执行 onDestroy()
   /// 情况8：被动，当前有，缓存没有，由于 replace 操作对当前界面进行了删除，没有进入缓存和历史栈，执行 onPause() - onDestroy()
-  void _innerGoNoHistory(String path, [String? debugInfo, AnimationController? animCtrl]){
+  void _innerGoNoHistory(String path, [ String? debugInfo, AnimationController? animCtrl, ]){
     var routeParam = __cachePathRoutes[path] ?? find(path);
     if(routeParam != null){
       __cachePathRoutes[path] = routeParam;
@@ -434,13 +448,13 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
         cachePage = CachePage.pathPage(path, route.ketchupPageBuilder!());
       }
       // cachePage.page?.onReceive({ ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() });
-
+      
       _innerGoPageReadyWillReceive(cachePage,
-        cachePage.page!, path, { ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() }, pageClass, targetColumn, isFromCache, debugInfo, animCtrl );
+        cachePage.page!, path, { ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() }, pageClass, targetColumn, isFromCache, debugInfo, animCtrl, );
     }
   }
 
-  void _innerGoPageReadyWillReceive(CachePage? cachePage, KetchupRoutePage page, String? path, Map<String, String>? onRecieveParams, int pageClass, int targetColumn, bool shouldCallResume, [String? debugInfo, AnimationController? animCtrl]){
+  void _innerGoPageReadyWillReceive(CachePage? cachePage, KetchupRoutePage page, String? path, Map<String, String>? onRecieveParams, int pageClass, int targetColumn, bool shouldCallResume, [ String? debugInfo, AnimationController? animCtrl,]){
     page.onReceive(onRecieveParams);
     /// NavigatorPage 和 NavigatorPageWidget 是两个类
     if(page is MultiColumns){
@@ -471,7 +485,11 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
     }else{
       page.onCreate();
     }
+    /// 6月22日 拆出第三段 willChangePT
+    _innerMergeWillChangePT(path, debugInfo, animCtrl, );
+  }
 
+  void _innerMergeWillChangePT([ String? path, String? debugInfo, AnimationController? animCtrl,]){
     var merged = mergeScreenPT<NavPair<CachePage>>(currentScreenPTs!, currentContextPT!, currentNavPairList);
 
     endCall(){
@@ -697,7 +715,7 @@ class NavigaterBuilder extends HistoryCachedNavigaterBuilder{
   
 }
 
-mixin NavBuilder implements ContextAccessor{
+mixin HasNavMixin implements ContextAccessor{
   int get contentPageClass;
   List<KetchupRoute> get routes;
   NavigaterBuilder? _nav;

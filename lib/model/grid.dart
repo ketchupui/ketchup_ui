@@ -2,10 +2,7 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:ketchup_ui/ketchup_ui.dart';
-import '../pxunit.dart';
-import 'context.dart';
 
 enum DIRECTION_ENUM { vertical, horizontal }
 enum END_POINT { include_start_only, include_end_only, include_start_end, exclude_start_end }
@@ -354,40 +351,43 @@ class GridContext extends BaseContext{
     return horizontalLines.update(name, (_)=>update(), ifAbsent: update);
   }
 
-  List<List<RectGetter>> createRectGetterMatrix({bool reverseX = false, bool reverseY = false, bool looseEqualIgnored = false, double xMinFactor = 0.00001, double yMinFactor = 0.00001,
+  List<List<RectGetter>> createRectGetterMatrix({bool reverseX = false, bool reverseY = false, 
+                    // bool looseEqualIgnored = false, double xMinFactor = 0.00001, double yMinFactor = 0.00001,
+                    bool Function(NamedLine later, NamedLine prev)? equalIgnoreCompare,
                     List<String> includes = const [], List<String> excludes = const [], Size? sampleSortSize}){
     var vLines = lines(DIRECTION.vertical, includes: includes, excludes: excludes);
     if(sampleSortSize != null) vLines = useSampleWidthSorted(sampleSortSize, vLines);
-    vLines = reverseX ? vLines.reversed.toList(): vLines;
-    // ketchupDebug(vLines);
+    ketchupDebug(
+      vLines = reverseX ? vLines.reversed.toList(): vLines
+    );
     var hLines = lines(DIRECTION.horizontal, includes: includes, excludes: excludes);
     if(sampleSortSize != null) hLines = useSampleHeightSorted(sampleSortSize, hLines);
-    hLines = reverseY ? hLines.reversed.toList(): hLines;
-    // ketchupDebug(hLines);
-    // assert(gameDebug(vLines).length >= 2 && gameDebug(hLines).length >= 2);
+    ketchupDebug(
+      hLines = reverseY ? hLines.reversed.toList(): hLines
+    );
+    return createRectGetterMatrixFromLines(reverseX: reverseX, reverseY: reverseY, vLines: vLines, hLines: hLines, equalIgnoreCompare: equalIgnoreCompare );
+  }
+
+  List<List<RectGetter>> createRectGetterMatrixFromLines({bool reverseX = false, bool reverseY = false, 
+                  // bool looseEqualIgnored = false, double xMinFactor = 0.00001, double yMinFactor = 0.00001,
+                  bool Function(NamedLine later, NamedLine prev)? equalIgnoreCompare,
+                  required List<NamedLine> vLines, required List<NamedLine> hLines}){
     assert(vLines.length >= 2 && hLines.length >= 2);
     List<List<RectGetter>> retColumns = [];
     for(var yGetterIndex = 0; yGetterIndex < hLines.length - 1; yGetterIndex++){
       var yLessGetter = reverseY ? hLines[yGetterIndex + 1] : hLines[yGetterIndex];
       var yMoreGetter = reverseY ? hLines[yGetterIndex] : hLines[yGetterIndex + 1];
-      if(!looseEqualIgnored && yMoreGetter.percent - yLessGetter.percent < yMinFactor || yMoreGetter.looseEqual(yLessGetter)) continue;
+      if(equalIgnoreCompare?.call(yMoreGetter, yLessGetter) ?? false) continue;
+      // if(!looseEqualIgnored && yMoreGetter.percent - yLessGetter.percent < yMinFactor || yMoreGetter.looseEqual(yLessGetter)) continue;
       List<RectGetter> newRow = []; 
       for(var xGetterIndex =0; xGetterIndex < vLines.length - 1; xGetterIndex++){
         var xLessGetter = reverseX ? vLines[xGetterIndex + 1] : vLines[xGetterIndex];
         var xMoreGetter = reverseX ? vLines[xGetterIndex] : vLines[xGetterIndex + 1];
-        if(!looseEqualIgnored && xMoreGetter.percent - xLessGetter.percent < xMinFactor || xMoreGetter.looseEqual(xLessGetter)) continue;
-        
+        if(equalIgnoreCompare?.call(xMoreGetter, xLessGetter) ?? false) continue;
+        // if(!looseEqualIgnored && xMoreGetter.percent - xLessGetter.percent < xMinFactor || xMoreGetter.looseEqual(xLessGetter)) continue;
         newRow.add((Size size)=>Rect.fromPoints(
           Offset(xLessGetter.computeWidth(size), yLessGetter.computeHeight(size)),
           Offset(xMoreGetter.computeWidth(size), yMoreGetter.computeHeight(size))
-          // Offset(xLessGetter.percentGetter(size) * size.width, yLessGetter.percentGetter(size) * size.height),
-          // Offset(xMoreGetter.percentGetter(size) * size.width, yMoreGetter.percentGetter(size) * size.height),
-          // Offset(
-          //   literalValue(xLessGetter, size) + xLessGetter.percentGetter(size) * size.width, 
-          //   literalValue(yLessGetter, size) + yLessGetter.percentGetter(size) * size.height),
-          // Offset(
-          //   literalValue(xMoreGetter, size) + xMoreGetter.percentGetter(size) * size.width, 
-          //   literalValue(yMoreGetter, size) + yMoreGetter.percentGetter(size) * size.height),
         ));
       }
       retColumns.add(newRow);
@@ -827,4 +827,6 @@ class GridContext extends BaseContext{
     ];
   }
 
+  /// 是否绘制拼缝
+  static bool gridNeedPaintSplitLine = true;
 }

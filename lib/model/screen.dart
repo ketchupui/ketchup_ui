@@ -327,9 +327,9 @@ class ScreenContext extends BaseContext{
   }
 
   /// 包含 cell-x-1 的情况
-  Rect? measuredPT(String screenPT){
+  Rect? measuredPT(String singlePT){
     if(measured){
-      var data = gKeyMappedValues[screenPT] ?? (row == 1 ? gKeyMappedValues['cell-$screenPT-1'] : null);
+      var data = gKeyMappedValues[singlePT] ?? (row == 1 ? gKeyMappedValues['cell-$singlePT-1'] : null);
       return data?.$2;
     }
     return null;
@@ -343,8 +343,8 @@ class ScreenContext extends BaseContext{
   //   }
   // }
 
-  (String, String)? cellRange(String screenPT){
-    switch(screenPT){
+  (String, String)? cellRange(String singlePT){
+    switch(singlePT){
       case PT_1:
       case PT_FULL_ONE:
         return ('cell-1-1', 'cell-1-$row');
@@ -357,21 +357,21 @@ class ScreenContext extends BaseContext{
       case PT_5:
         return ('cell-5-1', 'cell-5-$row');
     }
-    if(screenPT.startsWith('(') && screenPT.endsWith(')')){
-      var ranges = screenPT.substring(1, screenPT.length - 1).split('-');
+    if(singlePT.startsWith('(') && singlePT.endsWith(')')){
+      var ranges = singlePT.substring(1, singlePT.length - 1).split('-');
       return ('cell-${ranges.first}-1','cell-${ranges.last}-$row');
     }
     return null;
   }
 
-  Rect? paintRect(String screenPT){
+  Rect? paintRect(String singlePT){
     if(measured){
-      var data = measuredPT(screenPT);
+      var data = measuredPT(singlePT);
       if(data != null){
         return data;
       }
       /// 如果没有现成的需要计算
-      var range = cellRange(screenPT);
+      var range = cellRange(singlePT);
       if(range != null){
         final fromStartCell = gKeyMappedValues[range.$1];
         final toEndCell = gKeyMappedValues[range.$2];
@@ -383,12 +383,12 @@ class ScreenContext extends BaseContext{
     return null;
   }
 
-  Rect? rectFromGrid({int? column, int row = 1, String? screenPT, required List<NamedLine> verticals, required List<NamedLine> horizontals, bool isGlobal = true}){
+  Rect? rectFromGrid({int? column, int row = 1, String? singlePT, required List<NamedLine> verticals, required List<NamedLine> horizontals, bool isGlobal = true}){
     assert(verticals.length > 1 && horizontals.length > 1);
-    assert(column != null || screenPT != null);
+    assert(column != null || singlePT != null);
     Rect? measured;
-    if(screenPT != null){
-      measured = measuredPT(screenPT);
+    if(singlePT != null){
+      measured = measuredPT(singlePT);
     }else{
       measured = measuredCell(column!, row);
     }
@@ -399,11 +399,11 @@ class ScreenContext extends BaseContext{
     return null;
   }
 
-  Offset? offsetFromGrid({int? column, int row = 1, String? screenPT, required NamedLine vertical, required NamedLine horizontal, bool isGlobal = true}){
-    assert(column != null || screenPT != null);
+  Offset? offsetFromGrid({int? column, int row = 1, String? singlePT, required NamedLine vertical, required NamedLine horizontal, bool isGlobal = true}){
+    assert(column != null || singlePT != null);
     Rect? measured;
-    if(screenPT != null){
-      measured = measuredPT(screenPT);
+    if(singlePT != null){
+      measured = measuredPT(singlePT);
     }else{
       measured = measuredCell(column!, row);
     }
@@ -427,8 +427,8 @@ class ScreenContext extends BaseContext{
     return false;
   }
 
-  static ColumnPos? columnPosFromScreenPT(String screenPT){
-    switch(screenPT){
+  static ColumnPos? columnPosFromScreenPT(String singlePT){
+    switch(singlePT){
       case PT_12345:
         return (1, 5, 5);
       case PT_1234:
@@ -610,4 +610,23 @@ class ScreenContext extends BaseContext{
       _measuredCbs.removeLast()();
     }
   };
+
+  /// 根据当前 singlePT 获得 - 的分割比例，用于绘制拼屏网格线(物理拼缝，不包含在grid中)
+  List<double> Function(Size size)? columnSplits(String singlePT){
+    if(singlePT == PT_FULLSCREEN && column <= 5) singlePT = screenPTColumnsLR(1, column) ?? singlePT;
+    if(singlePT.contains('cell') || !singlePT.contains('-')) return null;
+    final divides = singlePT.split('-').length;
+    if(tailColumnExpandAvailable){
+      final double columnAspectRatio = singleAspectRatioSize!.aspectRatio / row; 
+      if(tailColumnExpand == TailColumnExpand.left && singlePT.contains(PT_1)){
+        return (Size size)=>List.generate(divides - 1, (index)=>size.height * columnAspectRatio * (index + 1)).reversed.toList();
+      }else
+      if(tailColumnExpand == TailColumnExpand.right && singlePT.contains(column.toString())){
+        final double columnAspectRatio = singleAspectRatioSize!.aspectRatio / row; 
+        return (Size size)=>List.generate(divides - 1, (index)=>size.height * columnAspectRatio * (index + 1));
+      }
+    } else {
+      return (Size size)=>List.generate(divides - 1, (index)=>size.width * (index + 1) / divides);
+    }
+  }
 }

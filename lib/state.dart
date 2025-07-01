@@ -220,13 +220,19 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
   //     child: null,);
   // }
 
-  Widget editModeGridWrapping({required Widget child}){
-    return screen.mode != RUNMODE.runtime ? CustomPaint(foregroundPainter: GridPainter(context: grid), child: child,) : child;
+  Widget editModeGridWrapping({required Widget child,required String singlePT}){
+    return screen.mode != RUNMODE.runtime ? CustomPaint(foregroundPainter: 
+      GridPainter(context: grid, 
+        /// 纵向需要计算
+        verExtra: screen.columnSplits(singlePT),
+        /// 横向完全等分
+        horExtra: screen.row > 1 ? (Size size)=>List.generate(screen.row - 1, (index)=>size.height * (index + 1) / screen.row ) : null
+      ), child: child,) : child;
   }
 
   Widget leafContainerWrapping({Key? key, Color? editModeColor, List<Widget>? children, required String leafName, Size? literalAspectRatio, String? extra, required BuildContext context}){
     // ketchupDebug('widgetsBuilder:${widget.widgetsBuilder}');
-    return editModeGridWrapping(child: Container(
+    return editModeGridWrapping(singlePT: leafName, child: Container(
             key: key,
             width: double.infinity,
             decoration: BoxDecoration(
