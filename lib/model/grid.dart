@@ -304,11 +304,11 @@ class NamedLine{
 
   bool looseEqual(Object other){
     if(identical(this, other)) return true;
-    final _equal = other is NamedLine && expression.looseEqual(other.expression);    
+    final equal = other is NamedLine && expression.looseEqual(other.expression);    
     // if(_equal){
     //   ketchupDebug('lq:true,$this,$other');
     // }
-    return _equal;
+    return equal;
   }
 
   @override

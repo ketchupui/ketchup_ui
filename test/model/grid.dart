@@ -7,59 +7,59 @@ void main(){
   group('Test screen model', (){
     GridContext grid = GridContext();
     test('Expression test', (){
-      final start = (Size size)=>.0;
-      final middle = (Size size)=>.5;
-      final end = (Size size)=>1.0;
+      double start(Size size)=>.0;
+      double middle(Size size)=>.5;
+      double end(Size size)=>1.0;
       final lvh5 = (5.0, PxUnit.vh);
       final lvh10 = (10.0, PxUnit.vh);
       final lvhn5 = (-5.0, PxUnit.vh);
       final lvhn10 = (-10.0, PxUnit.vh);
-      final vh5 = (Size size)=>lvh5;
-      final vh10 = (Size size)=>lvh10;
-      final vhn5 = (Size size)=>lvhn5;
-      final vhn10 = (Size size)=>lvhn10;
-      Expression expr_start = Expression.percentGetter(start);
-      Expression expr_margin_start_plus_vh5 = expr_start + lvh5;
-      Expression expr_margin_start_plus_vhn5 = expr_start + lvhn5;
-      Expression expr_margin_start_minus_vh5 = expr_start - lvh5;
-      Expression expr_margin_start_minus_vhn5 = expr_start - lvhn5;
-      Expression expr_margin_start_plus_vh5_plus_vh5 = expr_start + lvh5 + lvh5;
-      Expression expr_margin_start_plus_vh10 = expr_start + lvh10;
-      Expression expr_margin_start_minus_vh5_minus_vh5 = expr_start - lvh5 - lvh5;
-      Expression expr_margin_start_minus_vh10 = expr_start - lvh10;
+      (double, PxUnit) vh5(Size size)=>lvh5;
+      (double, PxUnit) vh10(Size size)=>lvh10;
+      (double, PxUnit) vhn5(Size size)=>lvhn5;
+      (double, PxUnit) vhn10(Size size)=>lvhn10;
+      Expression exprStart = Expression.percentGetter(start);
+      Expression exprMarginStartPlusVh5 = exprStart + lvh5;
+      Expression exprMarginStartPlusVhn5 = exprStart + lvhn5;
+      Expression exprMarginStartMinusVh5 = exprStart - lvh5;
+      Expression exprMarginStartMinusVhn5 = exprStart - lvhn5;
+      Expression exprMarginStartPlusVh5PlusVh5 = exprStart + lvh5 + lvh5;
+      Expression exprMarginStartPlusVh10 = exprStart + lvh10;
+      Expression exprMarginStartMinusVh5MinusVh5 = exprStart - lvh5 - lvh5;
+      Expression exprMarginStartMinusVh10 = exprStart - lvh10;
 
-      Expression expr_end = Expression.percentGetter(end);
-      Expression expr_margin_end_minus_vh5 = expr_end - lvh5;
-      Expression expr_margin_end_minus_vh5_minus_vh5 = expr_end - lvh5 - lvh5;
+      Expression exprEnd = Expression.percentGetter(end);
+      Expression exprMarginEndMinusVh5 = exprEnd - lvh5;
+      Expression exprMarginEndMinusVh5MinusVh5 = exprEnd - lvh5 - lvh5;
 
       // expect(expr_start.looseEqualString(Expression.literalGetter(vh5)), '');
       
-      expect(expr_start.looseEqual(Expression.literalGetter(vh5)), false);
-      expect(expr_margin_start_plus_vh5.looseEqual(Expression.literalGetter(vh5)), true);
-      expect(expr_margin_start_plus_vh5_plus_vh5.looseEqualString(Expression.literalGetter(vh5)), '''percent part:0.0 == 0.0
+      expect(exprStart.looseEqual(Expression.literalGetter(vh5)), false);
+      expect(exprMarginStartPlusVh5.looseEqual(Expression.literalGetter(vh5)), true);
+      expect(exprMarginStartPlusVh5PlusVh5.looseEqualString(Expression.literalGetter(vh5)), '''percent part:0.0 == 0.0
 literal part:(10.0, PxUnit.vh) != (5.0, PxUnit.vh)
 result: false
 ''');
-      expect(expr_margin_start_plus_vh5_plus_vh5.looseEqual(Expression.literalGetter(vh5)), false);
-      expect(expr_margin_start_plus_vh5_plus_vh5.looseEqual(Expression.literalGetter(vh10)), true);
+      expect(exprMarginStartPlusVh5PlusVh5.looseEqual(Expression.literalGetter(vh5)), false);
+      expect(exprMarginStartPlusVh5PlusVh5.looseEqual(Expression.literalGetter(vh10)), true);
       
-      expect(expr_margin_start_plus_vh10.looseEqual(expr_margin_start_plus_vh5), false);
-      expect(expr_margin_start_plus_vh10.looseEqual(expr_margin_start_plus_vh5_plus_vh5), true);
-      expect(expr_margin_start_plus_vh10.looseEqual(Expression.literalGetter(vh10)), true);
+      expect(exprMarginStartPlusVh10.looseEqual(exprMarginStartPlusVh5), false);
+      expect(exprMarginStartPlusVh10.looseEqual(exprMarginStartPlusVh5PlusVh5), true);
+      expect(exprMarginStartPlusVh10.looseEqual(Expression.literalGetter(vh10)), true);
       
-      expect(expr_start.looseEqual(Expression.literalGetter(vhn5)), false);
-      expect(expr_margin_start_plus_vhn5.looseEqual(Expression.literalGetter(vhn5)), true);
-      expect(expr_margin_start_minus_vh5.looseEqual(expr_margin_start_plus_vhn5), true);
+      expect(exprStart.looseEqual(Expression.literalGetter(vhn5)), false);
+      expect(exprMarginStartPlusVhn5.looseEqual(Expression.literalGetter(vhn5)), true);
+      expect(exprMarginStartMinusVh5.looseEqual(exprMarginStartPlusVhn5), true);
       
-      expect(expr_margin_start_minus_vh5_minus_vh5.looseEqualString(Expression.literalGetter(vhn5)), '''percent part:0.0 == 0.0
+      expect(exprMarginStartMinusVh5MinusVh5.looseEqualString(Expression.literalGetter(vhn5)), '''percent part:0.0 == 0.0
 literal part:(-10.0, PxUnit.vh) != (-5.0, PxUnit.vh)
 result: false
 ''');
-      expect(expr_margin_end_minus_vh5_minus_vh5.verticalWidthMergeLiteralExpression().looseEqualString(Expression.literalGetter(vhn5)), '''percent part:0.0 == 0.0
+      expect(exprMarginEndMinusVh5MinusVh5.verticalWidthMergeLiteralExpression().looseEqualString(Expression.literalGetter(vhn5)), '''percent part:0.0 == 0.0
 literal part:(90.0, PxUnit.vh) != (-5.0, PxUnit.vh)
 result: false
 ''');
-      expect(expr_margin_end_minus_vh5_minus_vh5.verticalWidthMergeLiteralExpression().looseEqualString(Expression.literalGetter(vhn5), Size(200, 100)), '''percent part:0.0 == 0.0
+      expect(exprMarginEndMinusVh5MinusVh5.verticalWidthMergeLiteralExpression().looseEqualString(Expression.literalGetter(vhn5), Size(200, 100)), '''percent part:0.0 == 0.0
 literal part:(190.0, PxUnit.vh) != (-5.0, PxUnit.vh)
 result: false
 ''');

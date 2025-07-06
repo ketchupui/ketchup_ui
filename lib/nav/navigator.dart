@@ -321,17 +321,17 @@ class RouteFinderTester with RouteFinder{
 abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> with RouteFinder implements ContextAccessor{
 
   //// 历史记录
-  List<String> __historyRoutes = [];
+  final List<String> __historyRoutes = [];
   
   //// 前进记录
-  List<String> __forwardRoutes = [];
+  final List<String> __forwardRoutes = [];
 
   /// (二级)缓存页面 (path->route->page)
   /// 有数据 表示查询过
-  Map<String, (KetchupRoute, Map<String, String>)> __cachePathRoutes = {};
+  final Map<String, (KetchupRoute, Map<String, String>)> __cachePathRoutes = {};
   /// 有数据表示可以使用 cachePage
   /// 没有数据可能有页面正在展示，需要从 KetchupRoute 重新创建一个 CachePage(相同页面多个Tab页，页面克隆)
-  Map<String, CachePage> __cachePathPages = {};
+  final Map<String, CachePage> __cachePathPages = {};
 
   NavCtntPair<CachePage> __currentPair = ([],[]);
 
@@ -500,7 +500,7 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
           cache.page!.onMeasured(screen);
         }
       });
-    };
+    }
 
     List<AnimationStatusListener> listeners = [];
     AnimationStatusListener addListener(AnimationStatusListener listener){

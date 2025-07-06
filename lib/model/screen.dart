@@ -599,7 +599,7 @@ class ScreenContext extends BaseContext{
     return genScreenPTColumnsRL(columnsRL, column)?.join(','); 
   }
   
-  List<VoidCallback> _measuredCbs = [];
+  final List<VoidCallback> _measuredCbs = [];
 
   void produceMeasuredCb(VoidCallback measuredCb){
     _measuredCbs.add(measuredCb);
@@ -628,5 +628,6 @@ class ScreenContext extends BaseContext{
     } else {
       return (Size size)=>List.generate(divides - 1, (index)=>size.width * (index + 1) / divides);
     }
+    return null;
   }
 }
