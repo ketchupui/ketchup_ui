@@ -58,8 +58,9 @@ typedef LinesDoAction = List<NamedLine> Function(DIRECTION_ENUM direction, Strin
 
 class Expression {
   final PercentGetter percentGetter;
+  final PxUnitVector? literalCache; /// 遇到 vh+vw wpc+hpc 或者 vh+wpc vw+hpc 时启用
   final LiteralGetter? literal;
-  const Expression(this.percentGetter, this.literal);
+  const Expression(this.percentGetter, this.literal, { this.literalCache });
   factory Expression.literal((double, PxUnit) lt) => Expression((Size size)=>0, (Size size)=>lt);
   factory Expression.literalGetter(LiteralGetter getter) => Expression((Size size)=>0, getter);
   factory Expression.percent(double value) => Expression((Size size)=>value, null);
@@ -69,8 +70,10 @@ class Expression {
     switch(o){
       case NamedLine n:
         return this + n.expression;
-      case (double, PxUnit) l:
-        return this + Expression.literal(l);
+      case (double, PxUnit) ldouble:
+        return this + Expression.literal(ldouble);
+      case (int, PxUnit) lint:
+        return this + Expression.literal(pxIntToDouble(lint));
       case LiteralGetter lg:
         return this + Expression.literalGetter(lg);
       case double p:
@@ -98,7 +101,7 @@ class Expression {
             }else
             if(b.$2 == PxUnit.hpc){
               return (pxUnitDoubleWidthPercentGetter(a)(size) + b.$1, PxUnit.hpc);
-            /// 单位里没有 wpc 和 hpc 的统一到 px
+            /// 单位里没有 wpc 和 hpc 的统一到 px(不能统一到 px 会导致失去响应式)
             }else{
               return (pxUnitDoubleGetter(a)(size) + pxUnitDoubleGetter(b)(size), PxUnit.px);
             }
@@ -507,6 +510,7 @@ class GridContext extends BaseContext{
   
   /// 创建单条线两侧边距
   /// 支持多条辅助线一同创建
+  @Deprecated('not support expression')
   static List<NamedLine> createSingleLineMargin(List<NamedLine> singleLines, PercentGetter plusGetter, PercentGetter minusGetter){
     var samplePlusPercent = plusGetter(Size.square(1.0));
     var sampleMinusPercent = minusGetter(Size.square(1.0));
@@ -610,6 +614,8 @@ class GridContext extends BaseContext{
   }
   
   /// 创建黄金分割线
+  @Deprecated('not support expression')
+  /// not support expression
   static List<NamedLine> createGoldenRatioDivides({
     NamedLine? fromStartLine,
     NamedLine? toEndLine,
@@ -636,6 +642,7 @@ class GridContext extends BaseContext{
   }
 
   /// 创建自定义线(分段占比重权值，加和占首尾线区间=1)
+  @Deprecated('not support expression')
   static List<NamedLine> createCustomSeperateSpaces(List<int> weights, {
     NamedLine? fromStartLine,
     NamedLine? toEndLine,
@@ -646,6 +653,7 @@ class GridContext extends BaseContext{
   }
 
   /// 创建自定义线(占首尾线区间比值 < 1)
+  @Deprecated('not support expression')
   static List<NamedLine> createCustomDivides(List<double> custom, {
     NamedLine? fromStartLine,
     NamedLine? toEndLine,
@@ -734,6 +742,7 @@ class GridContext extends BaseContext{
   /// 创建定宽等分线(start end可以颠倒)
   /// 注意只从start开始定宽
   /// Size大小会改变数量，无法使用 PercentGetter 创建，需要在外部根据Size变化每次重新 createStaticDivides
+  @Deprecated('not support expression, use createExpressionStaticDivides instead !')
   static List<NamedLine> createStaticDivides(double staticPercent, {double count = double.infinity,
     NamedLine? fromStartLine,
     NamedLine? toEndLine,
@@ -764,7 +773,7 @@ class GridContext extends BaseContext{
         count: count, fromEndLine: toEndLine, toStartLine: fromStartLine, includeStartEnd: includeStartEnd);
     } 
   }
-
+  @Deprecated('not support expression, use createReverseExpressionStaticDivides instead !')
   static List<NamedLine> createReverseStaticDivides(double staticPercent, {double count = double.infinity, 
     NamedLine? fromEndLine,
     NamedLine? toStartLine,

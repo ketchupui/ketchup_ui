@@ -1,13 +1,18 @@
 import 'dart:ui';
+import 'package:vector_math/vector_math_64.dart';
 
 import 'model/model.dart';
 
-enum PxUnit { vh, vw, rpx, px, wpc, hpc }
+enum PxUnit { vh, vw, rpx, px, wpc, hpc,
+  /// 一种中间存储形态 1 whpc = 1wpc + 1hpc = (1.0, 1.0) whpc
+  whpc, vwh }
 typedef PxUnitValue<T> = (T value, PxUnit unit);
 typedef PxUnitDouble = PxUnitValue<double>;
-typedef PxUnitGetter = double Function(Size viewport);
+typedef PxUnitVector = PxUnitValue<Vector2>;
+// typedef PxUnitGetter = double Function(Size viewport);
 typedef PxUnitValueGetter<T> = T Function(Size viewport);
 typedef PxUnitDoubleGetter = PxUnitValueGetter<double>;
+typedef PxUnitVectorGetter = PxUnitValueGetter<Vector2>;
 
 PercentGetter pxUnitWidthPercentGetter(PxUnit pu){
   return (Size viewport)=>pxUnitGetter(pu)(viewport) / viewport.width;
@@ -26,7 +31,7 @@ PercentGetter pxUnitDoubleHeightPercentGetter(PxUnitDouble value){
 }
 
 /// 宽度百分比 的 单位转换(/wpc->/?)
-PxUnitGetter widthPercentToPxUnitGetter(PxUnit toPu){
+PxUnitDoubleGetter widthPercentToPxUnitGetter(PxUnit toPu){
   if(toPu == PxUnit.wpc) return (Size viewport) => 1;
   return (Size viewport)=> pxUnitGetter(PxUnit.wpc)(viewport) / pxUnitGetter(toPu)(viewport); 
 }
@@ -35,7 +40,7 @@ PxUnitValueGetter<PxUnitDouble> widthPercentToPxUnitDoubleGetter(double wpcValue
   return (Size viewport)=> (wpcValue * widthPercentToPxUnitGetter(toPu)(viewport), toPu);
 }
 /// 高度百分比 的 单位转换(/hpc->/?)
-PxUnitGetter heightPercentToPxUnitGetter(PxUnit toPu){
+PxUnitDoubleGetter heightPercentToPxUnitGetter(PxUnit toPu){
   if(toPu == PxUnit.hpc) return (Size viewport) => 1;
   return (Size viewport)=> pxUnitGetter(PxUnit.hpc)(viewport) / pxUnitGetter(toPu)(viewport); 
 }
@@ -44,14 +49,16 @@ PxUnitValueGetter<PxUnitDouble> heightPercentToPxUnitDoubleGetter(double hpcValu
   return (Size viewport)=> (hpcValue * heightPercentToPxUnitGetter(toPu)(viewport), toPu);
 }
 
-PxUnitGetter pxUnitGetter(PxUnit pu){
+PxUnitValueGetter<dynamic> pxUnitGetter(PxUnit pu){
   return switch(pu){
     PxUnit.vh => (Size viewport) => viewport.height / 100,
     PxUnit.vw => (Size viewport) => viewport.width / 100,
+    PxUnit.vwh => (Size viewport) => Vector2(viewport.width / 100, viewport.height / 100),
     PxUnit.rpx => (Size viewport) => viewport.width / 750,
     PxUnit.px => (Size viewport) => 1,
     PxUnit.wpc => (Size viewport) => viewport.width,
-    PxUnit.hpc => (Size viewport) => viewport.height
+    PxUnit.hpc => (Size viewport) => viewport.height,
+    PxUnit.whpc => (Size viewport) => Vector2(viewport.width, viewport.height)
   };
 }
 
@@ -67,3 +74,6 @@ PxUnitValueGetter<Rect> vhRectOnlySize(Rect rect) => (Size viewport) => rect.top
 PxUnitDoubleGetter vh(double value) => pxUnitDoubleGetter((value, PxUnit.vh));
 PxUnitDoubleGetter vw(double value) => pxUnitDoubleGetter((value, PxUnit.vw));
 PxUnitDoubleGetter rpx(double value) => pxUnitDoubleGetter((value, PxUnit.rpx));
+
+PxUnitDouble pxUnitDouble(double value, PxUnit unit) => (value, unit);
+PxUnitDouble pxIntToDouble(PxUnitValue<int> pxInt) => (pxInt.$1.toDouble(), pxInt.$2);
