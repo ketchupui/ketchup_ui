@@ -91,12 +91,14 @@ class KetchupUILayout extends StatelessWidget{
   final LayerContext bgLayers;
   final Key? statefulKey;
   final WidgetsBuilder? widgetsBuilder;
+  final Decoration? bgDecoration;
   const KetchupUILayout({super.key, this.statefulKey, this.widgetsBuilder,
     this.singleAspectRatio, this.gapspan = 0, 
     required this.screen,
     required this.grid,
     required this.fgLayers,
     required this.bgLayers,
+    this.bgDecoration,
     this.mode = RUNMODE.debug,
     required this.rowColumn, this.tailColumnExpand = TailColumnExpand.none });
   
@@ -112,6 +114,7 @@ class KetchupUILayout extends StatelessWidget{
           grid: grid,
           fgLayers: fgLayers,
           bgLayers: bgLayers,
+          bgDecoration: bgDecoration,
           rowColumn: rowColumn, singleAspectRatio: singleAspectRatio, size: constraints.biggest, mode: mode, tailColumnExpand: tailColumnExpand,);
       }));
   }
@@ -131,12 +134,14 @@ class KetchupUISized extends StatefulWidget{
   final LayerContext bgLayers;
   final LayerContext fgLayers;
   final WidgetsBuilder? widgetsBuilder;
+  final Decoration? bgDecoration;
   const KetchupUISized({ super.key,
     required this.rowColumn, 
     required this.screen,
     required this.size, 
     this.widgetsBuilder, 
     this.singleAspectRatio, 
+    this.bgDecoration,
     this.tailColumnExpand = TailColumnExpand.none,
     this.mode = RUNMODE.debug, this.gapspan = 0, required this.grid, required this.bgLayers,required this.fgLayers });
   
@@ -431,31 +436,33 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
     //     isNeedUpdateFlag = true;
         stateDebug('update-build');
         setupContextListeners();
-        return Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(color: Colors.grey),
-            child: Column(
-              // mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: []
-                ..addAll(widget.mode == RUNMODE.edit ? [
-                    SizedBox(height: 20),
-                    Container(
-                      alignment: Alignment(1, 0.5),
-                      decoration: BoxDecoration(color: Colors.red),
-                      child: Text('$screenColumn个横向排列的 ${screenSingleAspectRatioSize?.width ?? '-'}:${screenSingleAspectRatioSize?.height ?? '-'} 比例容器', 
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                  ]:[])
-                ..add(Expanded(
-                  child: Container(
+        return 
+          // Container(
+          //   width: double.infinity,
+          //   height: double.infinity,
+          //   decoration: BoxDecoration(color: Colors.grey),
+          //   child: Column(
+          //     // mainAxisAlignment: MainAxisAlignment.center,
+          //     mainAxisAlignment: MainAxisAlignment.end,
+          //     crossAxisAlignment: CrossAxisAlignment.end,
+          //     children: []
+          //       ..addAll(widget.mode == RUNMODE.edit ? [
+          //           SizedBox(height: 20),
+          //           Container(
+          //             alignment: Alignment(1, 0.5),
+          //             decoration: BoxDecoration(color: Colors.red),
+          //             child: Text('$screenColumn个横向排列的 ${screenSingleAspectRatioSize?.width ?? '-'}:${screenSingleAspectRatioSize?.height ?? '-'} 比例容器', 
+          //               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          //             ),
+          //           ),
+          //           SizedBox(height: 20),
+          //         ]:[])
+          //       ..add(Expanded(
+          //         child: 
+                  Container(
                     width: double.infinity,
                     height: double.infinity,
-                    decoration: BoxDecoration(color: Colors.blueGrey), 
+                    decoration: widget.bgDecoration ?? BoxDecoration(color: Colors.blueGrey), 
                     child: fullscreenAspectRatioRow(
                       fullScreenAspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
                       child: 
@@ -478,9 +485,9 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
                         //   ),
                         // )
                       )
-                    )
-                  )
-                ))
+                //     )
+                //   )
+                // ))
           );
       //   );}
       // ));
