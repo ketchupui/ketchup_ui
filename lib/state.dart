@@ -5,6 +5,7 @@ import 'debug.dart';
 import 'model/model.dart';
 import 'painter/grid.dart';
 import 'painter/layer.dart';
+import 'pxunit.dart';
 import 'utils.dart';
 
 enum RUNMODE { runtime, edit, debug }
@@ -19,11 +20,12 @@ WidgetsBuilder BlankWidgetsBuilder = (BuildContext context, ContextAccessor ctxA
 
 class KetchupUIResponsive extends StatefulWidget{
   final List<ResponsiveValueGroup> responses;
-  final Key? ketchupKey;
+  final Key? statefulKey;
   final HandsetValueGroup init;
-  final ResponseAdaptiveCallback? cb;
+  final ResponseAdaptiveCallback? callbackBeforeRender;
   final WidgetsBuilder? widgetsBuilder;
-  const KetchupUIResponsive({super.key, this.widgetsBuilder, this.ketchupKey, required this.responses, this.cb,required this.init});
+  final Decoration? bgDecoration;
+  const KetchupUIResponsive({super.key, this.bgDecoration, this.widgetsBuilder, this.statefulKey, required this.responses, this.callbackBeforeRender, required this.init});
   @override
   State<StatefulWidget> createState()=> _KetchupUIResponsiveState();
 }
@@ -35,7 +37,7 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive> with DebugUpd
   @override
   void initState() {
     super.initState();
-    lastResponse = null;  
+    lastResponse = null;
   }
 
   @override
@@ -48,31 +50,37 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive> with DebugUpd
             if(group.fromExcludeSizeRatio < constraints.biggest.aspectRatio && constraints.biggest.aspectRatio <= group.toIncludeSizeRatio){
               if(lastResponse != group){
                 lastResponse = group;
-                var cbResult = widget.cb?.call(matched: group, size: constraints.biggest);
-                return KetchupUISized(key: widget.ketchupKey,
+                var cbResult = widget.callbackBeforeRender?.call(matched: group, size: constraints.biggest);
+                return KetchupUISized(key: widget.statefulKey,
                     widgetsBuilder: widget.widgetsBuilder,
                     rowColumn: cbResult?.rowColumn ?? widget.init.rowColumn, 
                     singleAspectRatio: cbResult != null ? cbResult.singleAspectRatio : group.singleAspectRatio, 
                     tailColumnExpand: cbResult?.tailColumnExpand ?? group.tailColumnExpand,
                     size: constraints.biggest, 
                     mode: cbResult?.mode ?? widget.init.mode, 
+                    screen: cbResult?.screen ?? widget.init.screen,
                     grid: cbResult?.grid ?? widget.init.grid,
                     fgLayers: cbResult?.fgLayers ?? widget.init.fgLayers,
                     bgLayers: cbResult?.bgLayers ?? widget.init.bgLayers,
-                    screen: cbResult?.screen ?? widget.init.screen);
+                    bgDecoration: widget.bgDecoration,);
               }
               break;
             }
           }
         }
         var init = widget.init;
-        return KetchupUISized(key: widget.ketchupKey, 
+        return KetchupUISized(key: widget.statefulKey, 
           widgetsBuilder: widget.widgetsBuilder,
           rowColumn: init.rowColumn, 
           singleAspectRatio: init.singleAspectRatio, 
           tailColumnExpand: init.tailColumnExpand,
-          size: constraints.biggest, mode: init.mode, 
-          screen: init.screen, grid: init.grid, fgLayers: init.fgLayers, bgLayers: init.bgLayers,);
+          size: constraints.biggest, 
+          mode: init.mode, 
+          screen: init.screen, 
+          grid: init.grid, 
+          fgLayers: init.fgLayers, 
+          bgLayers: init.bgLayers,
+          bgDecoration: widget.bgDecoration,);
     });
     
   }
@@ -237,6 +245,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
 
   Widget leafContainerWrapping({Key? key, Color? editModeColor, List<Widget>? children, required String leafName, Size? literalAspectRatio, String? extra, required BuildContext context}){
     // ketchupDebug('widgetsBuilder:${widget.widgetsBuilder}');
+    Size leafSize = screen.gKeyMappedValues[leafName]?.$2?.size ?? widget.size;
     return editModeGridWrapping(singlePT: leafName, child: Container(
             key: key,
             width: double.infinity,
@@ -247,12 +256,13 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
               borderRadius: BorderRadius.circular(8),
             ),
             child: Stack(
-              children: []
-                ..addAll(stateDebug(widget.widgetsBuilder?.call(
-                    context, this,  (extra ?? leafName, screen.currentPattern))) ?? [])
-                ..addAll(widget.mode == RUNMODE.edit ? [
+              children: [
+                ... (stateDebug(widget.widgetsBuilder?.call(
+                    context, this,  (extra ?? leafName, screen.currentPattern))) ?? []),
+                Text('                ${leafSize.width}x${leafSize.height}(${leafSize.aspectRatio.toStringAsFixed(4)})', style: TextStyle(fontSize: vmin(2)(widget.size), color: Colors.white, backgroundColor: Colors.black)),
+                ...(widget.mode == RUNMODE.edit ? [
                   AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style:TextStyle(color: editModeColor?.kDarken(0.8))),
-                ]:[])
+                ]:[])]
                 // ..addAll(
                 //   widget.mode != RUNMODE.runtime && screen.gKeyMappedValues.containsKey(leafName) ? 
                 //   [Column(
@@ -272,7 +282,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
 
   List<Widget> createFromScreenContextPatterns({ required BuildContext context, required String screenContextPattern }){
     // ketchupDebug('context render invoke(${++renderTimes})');
-    testNeedMeasure();
+    // testNeedMeasure();
     if(screenContextPattern == PT_FULLSCREEN){
       return [outsideRowExpandedAspectRatio( aspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
             child: Column(
@@ -319,7 +329,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
 
   List<Widget> createSingleColumnCells({required BuildContext context, required RCPair rowColumn, ScreenContext? core}){
     // ketchupDebug('render invoke(${++renderTimes})');
-    testNeedMeasure();
+    // testNeedMeasure();
     return List.generate(rowColumn.column, (int cIndex){
         var column = cIndex + 1;
         Size? calculatedAspectRatio = screen.singleAspectRatioSize == null || screen.isTailInclude('$column') ? null : screen.singleAspectRatioSize;
@@ -400,10 +410,10 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
   Size? lastSize;
 
   void initContext(){
-    screen.initSize = size;
-    grid.initSize = size;
-    fgLayers.initSize = size;
-    bgLayers.initSize = size;
+    screen.currentSize = size;
+    grid.currentSize = size;
+    fgLayers.currentSize = size;
+    bgLayers.currentSize = size;
   }
   
   void setupContextListeners(){
@@ -469,11 +479,16 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
                       /// 根据 CHATGPT 建议修改(高效动画版)
                         Stack(
                           children: [
-                            CustomPaint(painter: LayerPainter(context: bgLayers, accessor: this), size:Size.infinite),
-                            Positioned.fill(child: Row(children: screen.currentPatternNullable == PT_CELL ? 
-                              createSingleColumnCells(context: context, rowColumn: widget.rowColumn, core: screen) :
-                              createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!))),
-                            CustomPaint(painter: LayerPainter(context: fgLayers, accessor: this), size:Size.infinite),
+                            CustomPaint(painter: LayerPainter(context: bgLayers, accessor: this), size: Size.infinite),
+                            Positioned.fill(child: (){
+                              testNeedMeasure();
+                              return screen.singleCurrentPT != null ? 
+                              leafContainerWrapping(leafName: screen.singleCurrentPT!, context: context) : 
+                              Row(children: screen.currentPatternNullable == PT_CELL ? 
+                                createSingleColumnCells(context: context, rowColumn: widget.rowColumn, core: screen) :
+                                createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!));
+                            }()),
+                            CustomPaint(painter: LayerPainter(context: fgLayers, accessor: this), size: Size.infinite),
                           ]
                         )
                         // CustomPaint(

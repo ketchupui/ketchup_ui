@@ -5,7 +5,7 @@ import '../state.dart';
 import 'context.dart';
 import 'grid.dart';
 
-enum CATEGORY { tv_gamepad, pc_mousekeyboard, mobile_gesture, all }
+enum CATEGORY { tv_gamepad, pc_mousekeyboard, mobile_gesture, all}
 
 typedef GKeyValueRecord = (GlobalKey, Rect?);
 typedef RCPair = ({int row, int column});
@@ -80,6 +80,8 @@ const String PT_1_23 ='$PT_1,$PT_23';
 
 enum TailColumnExpand { left, right, none }
 
+enum SingleMode { LR, RL, none }
+
 class ScreenContext extends BaseContext{
   ScreenContext({RUNMODE mode = RUNMODE.debug, Size? singleAspectRatioSize, TailColumnExpand tailColumnExpand = TailColumnExpand.none, required RCPair rowColumn }): 
   _mode = mode, _singleAspectRatioSize = singleAspectRatioSize, _rowColumn = rowColumn , _tailColumnExpand = tailColumnExpand {
@@ -99,7 +101,6 @@ class ScreenContext extends BaseContext{
   Map<String, GlobalKey> gKeys = {};
   /// 跟测量相关
   Map<String, GKeyValueRecord> gKeyMappedValues = {};
-  
 
   int get row => _rowColumn.row;
   int get column => _rowColumn.column;
@@ -185,6 +186,62 @@ class ScreenContext extends BaseContext{
   /// 1,(2,3)
   String? _currentPattern;
   String? _lastPattern;
+  /// 2025.8.31 新增 _currentSingle 仅在竖屏模式下使用表示展示当前单个屏幕语境(始终单栏)
+  int _currentSingleIndex = -1;
+  SingleMode singleNextMode = SingleMode.none;
+
+  String singleModeStartRL([int? index]){
+    singleNextMode = SingleMode.RL;
+    final tempIndex = index ?? _currentSingleIndex;
+    _currentSingleIndex = tempIndex >= 0 && tempIndex <= singles.length - 1 ? tempIndex : singles.length - 1;
+    // gKeyMappedValues.clear();
+    return singleCurrentPT!;
+  }
+
+  String singleModeStartLR([int? index]){
+    singleNextMode = SingleMode.LR;
+    final tempIndex = index ?? _currentSingleIndex;
+    _currentSingleIndex = tempIndex >= 0 && tempIndex <= singles.length - 1 ? tempIndex : 0;
+    // gKeyMappedValues.clear();
+    return singleCurrentPT!;
+  }
+
+  String? singleModeNext(){
+    _currentSingleIndex = singleNextIndex;
+    return singleCurrentPT;
+  }
+
+  String? singleModePrev(){
+    _currentSingleIndex = singlePrevIndex;
+    return singleCurrentPT;
+  }
+
+  void singleModeStop(){
+    singleNextMode = SingleMode.none;
+    // gKeyMappedValues.clear();
+  }
+  
+  String? get singleCurrentPT => singleNextMode != SingleMode.none && _currentSingleIndex >=0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex] : null;
+  int get singleNextIndex => switch(singleNextMode){
+    SingleMode.none => -1,
+    SingleMode.RL => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? _currentSingleIndex - 1 : -1,
+    SingleMode.LR => _currentSingleIndex + 1 < singles.length ? _currentSingleIndex + 1 : -1
+  };
+  String? get singleNextPT => switch(singleNextMode){
+    SingleMode.none => null,
+    SingleMode.RL => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex - 1] : null,
+    SingleMode.LR => _currentSingleIndex + 1 < singles.length ? singles[_currentSingleIndex + 1] : null
+  };
+  int get singlePrevIndex => switch(singleNextMode){
+    SingleMode.none => -1,
+    SingleMode.RL => _currentSingleIndex + 1 < singles.length ? _currentSingleIndex + 1 : -1,
+    SingleMode.LR => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? _currentSingleIndex - 1 : -1,
+  };
+  String? get singlePrevPT => switch(singleNextMode){
+    SingleMode.none => null,
+    SingleMode.RL => _currentSingleIndex + 1 < singles.length ? singles[_currentSingleIndex + 1] : null,
+    SingleMode.LR => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex - 1] : null,
+  };
 
   set currentPatternNullable(String? current){
     _lastPattern = _currentPattern;
@@ -365,6 +422,7 @@ class ScreenContext extends BaseContext{
   }
 
   Rect? paintRect(String singlePT){
+    if(singleCurrentPT != null) return currentSize != null ? Offset.zero & currentSize! : null;
     if(measured){
       var data = measuredPT(singlePT);
       if(data != null){
@@ -592,11 +650,11 @@ class ScreenContext extends BaseContext{
   }
 
   String? genContextPTColumnsLR(List<int> columnsLR){
-    return genScreenPTColumnsLR(columnsLR, column)?.join(','); 
+    return genScreenPTColumnsLR(columnsLR, column)?.join(',');
   }
 
   String? genContextPTColumnsRL(List<int> columnsRL){
-    return genScreenPTColumnsRL(columnsRL, column)?.join(','); 
+    return genScreenPTColumnsRL(columnsRL, column)?.join(',');
   }
   
   final List<VoidCallback> _measuredCbs = [];

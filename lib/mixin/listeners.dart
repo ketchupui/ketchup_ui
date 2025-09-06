@@ -35,7 +35,7 @@ abstract class ChangeListenerNotifier<T>{
 
 mixin SizeChangeNotifier on Object{
 
-  Size? initSize;
+  Size? currentSize;
   final Map<String, List<SizeChangeListener>> _sizeChangeListenerMap = {
     DEFAULT_TAGNAME: [],
   };
@@ -63,10 +63,11 @@ mixin SizeChangeNotifier on Object{
   List<SizeChangeListener> get sizeList => _sizeChangeListenerMap.values.fold<List<SizeChangeListener>>([], (combineto, combined)=>combineto..addAll(combined));
   
   void notifySizeChange(Size newSize, Size? oldSize){
-    if(sizeList.isEmpty) return;
+    // if(sizeList.isEmpty) return;
     for (var listener in sizeList) {
       listener.call(newSize, oldSize);
     }
+    currentSize = newSize;
   }
 }
 
@@ -74,6 +75,7 @@ typedef RatioChangeListener = void Function(Size size, double newRatio, double? 
 
 mixin RatioChangeNotifier on Object{
 
+  double? currentRatio;
   final Map<String, List<RatioChangeListener>> _ratioChangeListenerMap = {
     DEFAULT_TAGNAME: [],
   };
@@ -101,10 +103,11 @@ mixin RatioChangeNotifier on Object{
   List<RatioChangeListener> get ratioList => _ratioChangeListenerMap.values.fold<List<RatioChangeListener>>([], (combineto, combined)=>combineto..addAll(combined));
     
   void notifyRatioChange(Size size, double newRatio, double? oldRatio){
-    if(ratioList.isEmpty) return;
+    // if(ratioList.isEmpty) return;
     for (var listener in ratioList) {
       listener.call(size, newRatio, oldRatio);
     }
+    currentRatio = newRatio;
   }
 }
 

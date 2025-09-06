@@ -88,14 +88,14 @@ class KetchupRoute extends GoRoute{
 
 class KetchupResponsiveMatchRouteSetting extends StatefulWidget{
   final List<ResponsiveValueGroup>? responses;
-  final Key? ketchupKey;
+  final Key? statefulKey;
   final HandsetValueGroup init;
   final ResponseAdaptiveCallback? cb;
 
   final List<RouteBase> routes;
   final WidgetsBuilder? widgetsBuilder;
 
-  const KetchupResponsiveMatchRouteSetting({super.key, this.widgetsBuilder, this.ketchupKey, required this.routes, this.responses,required this.init, this.cb});
+  const KetchupResponsiveMatchRouteSetting({super.key, this.widgetsBuilder, this.statefulKey, required this.routes, this.responses,required this.init, this.cb});
 
   @override
   State<StatefulWidget> createState()=> _KetchupResponsiveMatchRouteSettingState();
@@ -110,8 +110,8 @@ class _KetchupResponsiveMatchRouteSettingState extends State<KetchupResponsiveMa
       body: KetchupUIResponsive(
           widgetsBuilder: widget.widgetsBuilder,
           init: widget.init,
-          ketchupKey: widget.ketchupKey,
-          cb: widget.cb,
+          statefulKey: widget.statefulKey,
+          callbackBeforeRender: widget.cb,
           responses: widget.responses ?? [
             (category: CATEGORY.mobile_gesture, fromExcludeSizeRatio: double.negativeInfinity, toIncludeSizeRatio: 9/19, rowColumn: (row: 1, column: 1), singleAspectRatio: null, tailColumnExpand: TailColumnExpand.none),
             (category: CATEGORY.mobile_gesture, fromExcludeSizeRatio: 9/19, toIncludeSizeRatio: 9/16, rowColumn: (row: 1, column: 1), singleAspectRatio: Size(9, 19), tailColumnExpand: TailColumnExpand.none),

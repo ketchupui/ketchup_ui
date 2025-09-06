@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 
 import '../debug/console.dart';
 import '../ketchup_ui.dart';
-import 'page_builder.dart';
 import 'utils.dart';
 
 class CachePage with MultiColumns{
@@ -434,6 +433,25 @@ abstract class HistoryCachedNavigaterBuilder extends NavigatorCore<CachePage> wi
     }
     __forwardRoutes.clear();
     _innerGoNoHistory(currentRoute = route, 'nav.push', animCtrl, callUpdate);
+  }
+
+  void animUnloadWait(String route, AnimationController animCtrl)=>animUnload(route, animCtrl, false);
+  void animUnload(String route, AnimationController animCtrl, [bool callUpdate = true]) => unload(route, animCtrl, callUpdate);
+  void unloadWait(String route) => unload(route, null, false);
+  void unload(String route, [AnimationController? animCtrl, bool callUpdate = true]){
+    var removed = __currentPair.$1.firstWhereOrNull((cache) => cache.$3.onCreatePath == route);
+    if(removed == null){
+      if((removed = __currentPair.$2.firstWhereOrNull((cache) => cache.$3.onCreatePath == route)) == null){
+        return;
+      }else{
+        __currentPair.$2.remove(removed);
+      }
+    }else{
+      __currentPair.$1.remove(removed);
+    }
+    removed!.$3.page?.onPause();
+    removed.$3.page?.onDestroy();
+    _innerMergeWillChangePT(route, 'unload', animCtrl, callUpdate);
   }
 
   void replace(String route){
