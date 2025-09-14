@@ -671,6 +671,8 @@ class ScreenContext extends BaseContext{
 
   /// 根据当前 singlePT 获得 - 的分割比例，用于绘制拼屏网格线(物理拼缝，不包含在grid中)
   List<double> Function(Size size)? columnSplits(String singlePT){
+    /// 2025.9.10 单屏模式就是容器宽度
+    if(singleNextMode != SingleMode.none) return (Size size) => [.0, size.width];
     if(singlePT == PT_FULLSCREEN && column <= 5) singlePT = screenPTColumnsLR(1, column) ?? singlePT;
     if(singlePT.contains('cell') || !singlePT.contains('-')) return null;
     final divides = singlePT.split('-').length;
