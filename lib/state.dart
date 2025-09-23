@@ -8,24 +8,25 @@ import 'painter/layer.dart';
 import 'pxunit.dart';
 import 'utils.dart';
 
-enum RUNMODE { runtime, edit, debug }
 
 typedef ResponsiveValueGroup = ({CATEGORY category, double fromExcludeSizeRatio, double toIncludeSizeRatio, RCPair rowColumn, Size? singleAspectRatio, TailColumnExpand tailColumnExpand});
 typedef ScreenHandset = ({RCPair rowColumn, Size? singleAspectRatio, TailColumnExpand tailColumnExpand});
-typedef HandsetValueGroup = ({RCPair rowColumn, Size? singleAspectRatio, TailColumnExpand tailColumnExpand, RUNMODE mode, ScreenContext screen, GridContext grid, LayerContext fgLayers, LayerContext bgLayers});
+typedef HandsetValueGroup = ({ScreenContext screen, GridContext grid, LayerContext fgLayers, LayerContext bgLayers});
 typedef ResponseAdaptiveCallback = HandsetValueGroup? Function({required ResponsiveValueGroup matched, required Size size});
-typedef WidgetsBuilderFilter<T> = T Function(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
-typedef WidgetsBuilder = WidgetsBuilderFilter<List<Widget>?>;
-WidgetsBuilder BlankWidgetsBuilder = (BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT)=>null;
+typedef CaScreenWidgetsBuilderFilter<T> = T Function(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
+typedef ScreensBuilder = CaScreenWidgetsBuilderFilter<List<Widget>?>;
+typedef WidgetsBuilder = List<Widget>? Function(BuildContext context);
+ScreensBuilder BlankWidgetsBuilder = (BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT)=>null;
 
 class KetchupUIResponsive extends StatefulWidget{
   final List<ResponsiveValueGroup> responses;
   final Key? statefulKey;
   final HandsetValueGroup init;
   final ResponseAdaptiveCallback? callbackBeforeRender;
-  final WidgetsBuilder? widgetsBuilder;
+  final ScreensBuilder? screensBuilder;
+  final WidgetsBuilder? fullscreenBackgroundBuilder;
   final Decoration? bgDecoration;
-  const KetchupUIResponsive({super.key, this.bgDecoration, this.widgetsBuilder, this.statefulKey, required this.responses, this.callbackBeforeRender, required this.init});
+  const KetchupUIResponsive({super.key, this.bgDecoration, this.screensBuilder, this.fullscreenBackgroundBuilder, this.statefulKey, required this.responses, this.callbackBeforeRender, required this.init});
   @override
   State<StatefulWidget> createState()=> _KetchupUIResponsiveState();
 }
@@ -52,12 +53,13 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive> with DebugUpd
                 lastResponse = group;
                 var cbResult = widget.callbackBeforeRender?.call(matched: group, size: constraints.biggest);
                 return KetchupUISized(key: widget.statefulKey,
-                    widgetsBuilder: widget.widgetsBuilder,
-                    rowColumn: cbResult?.rowColumn ?? widget.init.rowColumn, 
-                    singleAspectRatio: cbResult != null ? cbResult.singleAspectRatio : group.singleAspectRatio, 
-                    tailColumnExpand: cbResult?.tailColumnExpand ?? group.tailColumnExpand,
+                    screensBuilder: widget.screensBuilder,
+                    fullscreenBackgroundBuilder: widget.fullscreenBackgroundBuilder,
+                    // rowColumn: cbResult?.rowColumn ?? widget.init.rowColumn, 
+                    // singleAspectRatio: cbResult != null ? cbResult.singleAspectRatio : group.singleAspectRatio, 
+                    // tailColumnExpand: cbResult?.tailColumnExpand ?? group.tailColumnExpand,
                     size: constraints.biggest, 
-                    mode: cbResult?.mode ?? widget.init.mode, 
+                    // mode: cbResult?.mode ?? widget.init.mode, 
                     screen: cbResult?.screen ?? widget.init.screen,
                     grid: cbResult?.grid ?? widget.init.grid,
                     fgLayers: cbResult?.fgLayers ?? widget.init.fgLayers,
@@ -70,12 +72,13 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive> with DebugUpd
         }
         var init = widget.init;
         return KetchupUISized(key: widget.statefulKey, 
-          widgetsBuilder: widget.widgetsBuilder,
-          rowColumn: init.rowColumn, 
-          singleAspectRatio: init.singleAspectRatio, 
-          tailColumnExpand: init.tailColumnExpand,
+          screensBuilder: widget.screensBuilder,
+          fullscreenBackgroundBuilder: widget.fullscreenBackgroundBuilder,
+          // rowColumn: init.rowColumn, 
+          // singleAspectRatio: init.singleAspectRatio, 
+          // tailColumnExpand: init.tailColumnExpand,
+          // mode: init.mode, 
           size: constraints.biggest, 
-          mode: init.mode, 
           screen: init.screen, 
           grid: init.grid, 
           fgLayers: init.fgLayers, 
@@ -88,27 +91,31 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive> with DebugUpd
 
 class KetchupUILayout extends StatelessWidget{
 
-  final Size? singleAspectRatio;
-  final RCPair rowColumn;
-  final TailColumnExpand tailColumnExpand;
+  // final Size? singleAspectRatio;
+  // final RCPair rowColumn;
+  // final TailColumnExpand tailColumnExpand;
   final double gapspan;
-  final RUNMODE mode;
+  // final RUNMODE mode;
   final ScreenContext screen;
   final GridContext grid;
   final LayerContext fgLayers;
   final LayerContext bgLayers;
   final Key? statefulKey;
-  final WidgetsBuilder? widgetsBuilder;
+  final ScreensBuilder? screensBuilder;
+  final WidgetsBuilder? fullscreenBackgroundBuilder;
   final Decoration? bgDecoration;
-  const KetchupUILayout({super.key, this.statefulKey, this.widgetsBuilder,
-    this.singleAspectRatio, this.gapspan = 0, 
+  const KetchupUILayout({super.key, this.statefulKey, this.screensBuilder, this.fullscreenBackgroundBuilder,
+    // this.singleAspectRatio, 
+    this.gapspan = 0, 
     required this.screen,
     required this.grid,
     required this.fgLayers,
     required this.bgLayers,
     this.bgDecoration,
-    this.mode = RUNMODE.debug,
-    required this.rowColumn, this.tailColumnExpand = TailColumnExpand.none });
+    // this.mode = RUNMODE.debug,
+    // required this.rowColumn, 
+    // this.tailColumnExpand = TailColumnExpand.none 
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -117,13 +124,18 @@ class KetchupUILayout extends StatelessWidget{
         ketchupDebug('KetchupUILayouer-layout-biggest:${constraints.biggest}');
         // ketchupDebug('layout-smallest:${constraints.smallest}');
         return KetchupUISized(key: statefulKey,
-          widgetsBuilder: widgetsBuilder,
+          screensBuilder: screensBuilder,
           screen: screen,
           grid: grid,
           fgLayers: fgLayers,
           bgLayers: bgLayers,
           bgDecoration: bgDecoration,
-          rowColumn: rowColumn, singleAspectRatio: singleAspectRatio, size: constraints.biggest, mode: mode, tailColumnExpand: tailColumnExpand,);
+          // rowColumn: rowColumn, 
+          // singleAspectRatio: singleAspectRatio, 
+          size: constraints.biggest, 
+          // mode: mode, 
+          // tailColumnExpand: tailColumnExpand,
+        );
       }));
   }
   
@@ -131,27 +143,30 @@ class KetchupUILayout extends StatelessWidget{
 
 class KetchupUISized extends StatefulWidget{
 
-  final Size? singleAspectRatio;
-  final RCPair rowColumn;
-  final TailColumnExpand tailColumnExpand;
+  // final Size? singleAspectRatio;
+  // final RCPair rowColumn;
+  // final TailColumnExpand tailColumnExpand;
   final Size size;
   final double gapspan;
-  final RUNMODE mode;
+  // final RUNMODE mode;
   final ScreenContext screen;
   final GridContext grid;
   final LayerContext bgLayers;
   final LayerContext fgLayers;
-  final WidgetsBuilder? widgetsBuilder;
+  final ScreensBuilder? screensBuilder;
+  final WidgetsBuilder? fullscreenBackgroundBuilder;
   final Decoration? bgDecoration;
   const KetchupUISized({ super.key,
-    required this.rowColumn, 
+    // required this.rowColumn, 
     required this.screen,
     required this.size, 
-    this.widgetsBuilder, 
-    this.singleAspectRatio, 
+    this.screensBuilder, 
+    this.fullscreenBackgroundBuilder,
+    // this.singleAspectRatio, 
     this.bgDecoration,
-    this.tailColumnExpand = TailColumnExpand.none,
-    this.mode = RUNMODE.debug, this.gapspan = 0, required this.grid, required this.bgLayers,required this.fgLayers });
+    // this.tailColumnExpand = TailColumnExpand.none,
+    // this.mode = RUNMODE.debug, 
+    this.gapspan = 0, required this.grid, required this.bgLayers,required this.fgLayers });
   
   @override
   State<StatefulWidget> createState() => KetchupUIState();
@@ -171,11 +186,11 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
   @override
   Size get size => widget.size;
 
-  Size? get screenSingleAspectRatioSize => widget.singleAspectRatio;
-  RCPair get screenRowColumn => widget.rowColumn;
+  Size? get screenSingleAspectRatioSize => screen.singleAspectRatioSize;
+  RCPair get screenRowColumn => screen.rowColumn;
   int get screenRow => screenRowColumn.row;
   int get screenColumn => screenRowColumn.column;
-  TailColumnExpand get screenTailColumnExpand => widget.tailColumnExpand;
+  TailColumnExpand get screenTailColumnExpand => screen.tailColumnExpand;
 
   int renderTimes = 0;
 
@@ -245,7 +260,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
 
   Widget leafContainerWrapping({Key? key, Color? editModeColor, List<Widget>? children, required String leafName, Size? literalAspectRatio, String? extra, required BuildContext context}){
     // ketchupDebug('widgetsBuilder:${widget.widgetsBuilder}');
-    Size leafSize = screen.gKeyMappedValues[leafName]?.$2?.size ?? widget.size;
+    Size leafSize = screen.debug?.gKeyMappedValues[leafName]?.$2?.size ?? widget.size;
     return editModeGridWrapping(singlePT: leafName, child: Container(
             key: key,
             width: double.infinity,
@@ -257,10 +272,10 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
             ),
             child: Stack(
               children: [
-                ... (stateDebug(widget.widgetsBuilder?.call(
+                ... (stateDebug(widget.screensBuilder?.call(
                     context, this,  (extra ?? leafName, screen.currentPattern))) ?? []),
-                Text('                ${leafSize.width}x${leafSize.height}(${leafSize.aspectRatio.toStringAsFixed(4)})', style: TextStyle(fontSize: vmin(2)(widget.size), color: Colors.white, backgroundColor: Colors.black)),
-                ...(widget.mode == RUNMODE.edit ? [
+                Text('                ${leafSize.width.toStringAsFixed(2)}x${leafSize.height.toStringAsFixed(2)}(${leafSize.aspectRatio.toStringAsFixed(4)})', style: TextStyle(fontSize: vmin(2)(widget.size), color: Colors.white, backgroundColor: Colors.black)),
+                ...(screen.mode == RUNMODE.edit ? [
                   AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style:TextStyle(color: editModeColor?.kDarken(0.8))),
                 ]:[])]
                 // ..addAll(
@@ -290,7 +305,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
                 aspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
                 child: leafContainerWrapping(
                   context: context,
-                  key: screen.gKeys.putIfAbsent(screenContextPattern, ()=>GlobalKey<KetchupUIState>(debugLabel: screenContextPattern)),
+                  key: screen.debug?.gKeys.putIfAbsent(screenContextPattern, ()=>GlobalKey<KetchupUIState>(debugLabel: screenContextPattern)),
                   literalAspectRatio: screen.fullscreenAspectRatioSize,
                   leafName: screenContextPattern, editModeColor: screen.contextScreenColorMap[screenContextPattern]))]))];
     }else{
@@ -300,12 +315,13 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
           columnCount = screenPattern.split('-').length;
         }  
         /// 计算约束(v0.0.3 新增尾屏比例)
-        var widgetSingleAspectRatio = widget.screen.singleAspectRatioSize;
+        // var screenSingleAspectRatioSize = widget.screen.singleAspectRatioSize;
+        final ratioSize = screenSingleAspectRatioSize;
         /// 没有设置单屏比例或者属于尾屏比例范畴 则flex自适配
-        Size? calculatedAspectRatio = widgetSingleAspectRatio == null || widget.screen.isTailInclude(screenPattern) ? null:  
+        Size? calculatedAspectRatio = ratioSize == null || widget.screen.isTailInclude(screenPattern) ? null:  
         /// 不属于尾屏比例并设置了单屏比例则计算总屏幕比例
-        Size(widgetSingleAspectRatio.width * columnCount, /// 此处screencount 相当于widget.rowColumn.column
-              widgetSingleAspectRatio.height * screenRow);
+        Size(ratioSize.width * columnCount, /// 此处screencount 相当于widget.rowColumn.column
+              ratioSize.height * screenRow);
         return outsideRowExpandedAspectRatio( 
             flex: columnCount,
             aspectRatio: calculatedAspectRatio?.aspectRatio,
@@ -315,7 +331,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
                   aspectRatio: calculatedAspectRatio?.aspectRatio,
                   child:  leafContainerWrapping(
                     context: context,
-                    key: screen.gKeys.putIfAbsent(screenPattern, ()=>GlobalKey<KetchupUIState>(debugLabel: screenPattern)),
+                    key: screen.debug?.gKeys.putIfAbsent(screenPattern, ()=>GlobalKey<KetchupUIState>(debugLabel: screenPattern)),
                     literalAspectRatio: calculatedAspectRatio,
                     leafName: screenPattern,
                     editModeColor: screen.contextScreenColorMap[screenPattern],
@@ -332,7 +348,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
     // testNeedMeasure();
     return List.generate(rowColumn.column, (int cIndex){
         var column = cIndex + 1;
-        Size? calculatedAspectRatio = screen.singleAspectRatioSize == null || screen.isTailInclude('$column') ? null : screen.singleAspectRatioSize;
+        Size? calculatedAspectRatio = screenSingleAspectRatioSize == null || screen.isTailInclude('$column') ? null : screenSingleAspectRatioSize;
         return outsideRowExpandedAspectRatio( 
           aspectRatio: calculatedAspectRatio?.aspectRatio,
           child: Column(
@@ -342,7 +358,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
               return insideColumnExpandedAspectRatio( 
                 aspectRatio: calculatedAspectRatio?.aspectRatio,
                 child: leafContainerWrapping(
-                  key: core?.gKeys.putIfAbsent(cellname, ()=>GlobalKey<KetchupUIState>(debugLabel: cellname)),
+                  key: core?.debug?.gKeys.putIfAbsent(cellname, ()=>GlobalKey<KetchupUIState>(debugLabel: cellname)),
                   context: context,
                   leafName: cellname,
                   extra: '${cIndex+1}',
@@ -356,11 +372,11 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
   
   bool get needUpdateMeasure => lastSize != size;
   void testNeedMeasure(){
-    if(screen.isNeedMeasure || needUpdateMeasure){
+    if((screen.debug?.isNeedMeasure ?? false) || needUpdateMeasure){
       lazyUpdate((){
         _updateGKeyValueRecords();
         lastSize = size;
-      }, 'measured', screen.consumeMeasuredCb);
+      }, 'measured', screen.debug?.consumeMeasuredCb);
       
       // WidgetsBinding.instance.addPostFrameCallback((Duration dt){
       //   _updateGKeyValueRecords();
@@ -373,7 +389,8 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
 
   /// 更新 GKey 测量信息
   void _updateGKeyValueRecords(){
-    screen.gKeyMappedValues = screen.gKeys.map<String, GKeyValueRecord>((debugName, gKey){
+    assert(screen.debug != null);
+    screen.debug!.gKeyMappedValues = screen.debug!.gKeys.map<String, GKeyValueRecord>((debugName, gKey){
       final renderBox = gKey.currentContext?.findRenderObject();
       if(renderBox != null){
         var rect = (renderBox as RenderBox).localToGlobal(Offset.zero) & renderBox.size;
@@ -479,13 +496,15 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
                       /// 根据 CHATGPT 建议修改(高效动画版)
                         Stack(
                           children: [
+                            ... (stateDebug(widget.fullscreenBackgroundBuilder?.call(
+                            context)) ?? []),
                             CustomPaint(painter: LayerPainter(context: bgLayers, accessor: this), size: Size.infinite),
                             Positioned.fill(child: (){
                               testNeedMeasure();
                               return screen.singleCurrentPT != null ? 
                               leafContainerWrapping(leafName: screen.singleCurrentPT!, context: context) : 
                               Row(children: screen.currentPatternNullable == PT_CELL ? 
-                                createSingleColumnCells(context: context, rowColumn: widget.rowColumn, core: screen) :
+                                createSingleColumnCells(context: context, rowColumn: screenRowColumn, core: screen) :
                                 createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!));
                             }()),
                             CustomPaint(painter: LayerPainter(context: fgLayers, accessor: this), size: Size.infinite),

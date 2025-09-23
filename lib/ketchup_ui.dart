@@ -1,3 +1,4 @@
+export 'nav/core.dart';
 export 'nav/navigator.dart';
 export 'nav/page_builder.dart';
 export 'model/model.dart';

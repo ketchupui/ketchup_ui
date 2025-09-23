@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 abstract class DebugUpdate {
   void debugUpdate(VoidCallback callback, [String? debugInfo]);
   void debugLazyUpdate(VoidCallback callback, [String? debugInfo]);
-} 
+}
 
 mixin DebugUpdater<T extends StatefulWidget> on State<T> implements DebugUpdate{
   String? _debugInfo;

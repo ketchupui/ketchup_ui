@@ -19,13 +19,14 @@ abstract class PageLifeCycle{
   void onMeasured(ScreenContext screen);
   void onPause();
   void onDestroy();
-  List<Widget>? screenBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
-  Widget build(BuildContext context);
+  
+  List<Widget>? columnBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
+  Widget fullBuild(BuildContext context);
 }
 
 /// 带有生命周期的页面
 abstract mixin class KetchupRoutePage implements PageLifeCycle{
-  void onStateInit(void Function(VoidCallback c, [String? d]) stateUpdater);
+  // void onStateInit(void Function(VoidCallback c, [String? d]) stateUpdater);
   
   @override
   AnimationController willPlayAnimated({ScreenPT? fromPT, required ScreenPT toPT, required AnimationController animCtrl}) {
@@ -83,7 +84,7 @@ class KetchupRoute extends GoRoute{
   @override
   List<KetchupRoute> get routes => super.routes.cast<KetchupRoute>();
   
-  KetchupRoute({required super.path, this.ketchupPageBuilder, GoRouterWidgetBuilder? builder, super.pageBuilder, super.routes}): super(builder: builder ?? (context, state) => ketchupPageBuilder!().build(context),) ;
+  KetchupRoute({required super.path, this.ketchupPageBuilder, GoRouterWidgetBuilder? builder, super.pageBuilder, super.routes}): super(builder: builder ?? (context, state) => ketchupPageBuilder!().fullBuild(context),) ;
 }
 
 class KetchupResponsiveMatchRouteSetting extends StatefulWidget{
@@ -93,9 +94,9 @@ class KetchupResponsiveMatchRouteSetting extends StatefulWidget{
   final ResponseAdaptiveCallback? cb;
 
   final List<RouteBase> routes;
-  final WidgetsBuilder? widgetsBuilder;
+  final ScreensBuilder? screensBuilder;
 
-  const KetchupResponsiveMatchRouteSetting({super.key, this.widgetsBuilder, this.statefulKey, required this.routes, this.responses,required this.init, this.cb});
+  const KetchupResponsiveMatchRouteSetting({super.key, this.screensBuilder, this.statefulKey, required this.routes, this.responses,required this.init, this.cb});
 
   @override
   State<StatefulWidget> createState()=> _KetchupResponsiveMatchRouteSettingState();
@@ -108,7 +109,7 @@ class _KetchupResponsiveMatchRouteSettingState extends State<KetchupResponsiveMa
   Widget build(BuildContext context) {
     return Scaffold(
       body: KetchupUIResponsive(
-          widgetsBuilder: widget.widgetsBuilder,
+          screensBuilder: widget.screensBuilder,
           init: widget.init,
           statefulKey: widget.statefulKey,
           callbackBeforeRender: widget.cb,

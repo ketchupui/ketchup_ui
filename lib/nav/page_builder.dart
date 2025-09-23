@@ -1,19 +1,26 @@
 
 import 'package:flutter/widgets.dart';
+
 import '../debug/console.dart';
-import '../ketchup_ui.dart';
+import '../model/accessor.dart';
+import '../model/screen.dart';
+import '../route.dart';
+import '../state.dart';
+import 'core.dart';
+
+
 
 class SimpleNavigatorPageBuilder extends NavigatorPage{
 
   final WidgetBuilder? builder;
-  final WidgetsBuilder? widgetsBuilder;
+  final ScreensBuilder? widgetsBuilder;
 
   SimpleNavigatorPageBuilder({required this.availableColumns, this.builder, this.widgetsBuilder});
 
-  factory SimpleNavigatorPageBuilder.maxPageLevel(int maxPageLevel, WidgetsBuilder widgetsBuilder)=>SimpleNavigatorPageBuilder(availableColumns: List.generate(maxPageLevel, (col)=>col), widgetsBuilder: widgetsBuilder);
+  factory SimpleNavigatorPageBuilder.maxPageLevel(int maxPageLevel, ScreensBuilder widgetsBuilder)=>SimpleNavigatorPageBuilder(availableColumns: List.generate(maxPageLevel, (col)=>col), widgetsBuilder: widgetsBuilder);
   
   @override
-  Widget build(BuildContext context) {
+  Widget fullBuild(BuildContext context) {
     return builder?.call(context) ?? Container();
   }
 
@@ -28,17 +35,13 @@ class SimpleNavigatorPageBuilder extends NavigatorPage{
   @override
   void onScreenWillChange(ScreenPT willChangePT) {
   }
-
-  @override
-  void onStateInit(void Function(VoidCallback c, [String? d]) stateUpdater) {
-  }
   
   @override
-  List<Widget>? screenBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
+  List<Widget>? columnBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
     if(widgetsBuilder != null){
       return widgetsBuilder!.call(context, ctxAccessor, screenPT);
     }
-    return [build(context)];
+    return [fullBuild(context)];
   }
   
   @override
@@ -60,23 +63,6 @@ class SimpleNavigatorPageBuilder extends NavigatorPage{
   void onReceive(Map<String, String>? params) {
   }
   
-}
-
-abstract mixin class MultiColumns {
-  List<int> get availableColumns;
-  static List<int> indexed(int columns) => columns > 1 ? List.generate(columns, (c)=>c+1) : [1];
-  static List<int> bothends(int columns) => columns > 1 ? [1, columns] : [1];
-  static List<int> even(int columns) =>columns > 1 ? List.generate(columns, (c){
-    if(c == 0 || c == columns -1 ) return c + 1;
-    return (c + 1) % 2 == 0 ? c + 1 : -1;
-  }).where((i)=>i != -1).toList() : [1];
-  static List<int> odds(int columns) => columns > 1 ? List.generate(columns, (c){
-    if(c == 0 || c == columns - 1) return c + 1;
-    return (c + 1) % 2 == 0 ? -1 : c + 1;
-  }).where((i)=>i != -1).toList() : [1];
-  List<int> union(MultiColumns target) => availableColumns.toSet().union(target.availableColumns.toSet()).toList();
-  List<int> difference(MultiColumns target) => [1, ...availableColumns.toSet().difference(target.availableColumns.toSet())];
-  List<int> intersection(MultiColumns target) => availableColumns.toSet().intersection(target.availableColumns.toSet()).toList();
 }
 
 class SimpleMultiColumnsImp extends MultiColumns{
@@ -138,7 +124,7 @@ class TestableRoutePage extends NavigatorPage with vConsole{
   factory TestableRoutePage.odds(int columns, {String name = DEFAULT_NAME})=>TestableRoutePage(name, MultiColumns.odds(columns));
   
   @override
-  Widget build(BuildContext context) {
+  Widget fullBuild(BuildContext context) {
     return Container();
   }
 
@@ -163,12 +149,8 @@ class TestableRoutePage extends NavigatorPage with vConsole{
   }
 
   @override
-  void onStateInit(void Function(VoidCallback c, [String? d]) stateUpdater) {
-  }
-
-  @override
-  List<Widget>? screenBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
-    return [build(context)];
+  List<Widget>? columnBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
+    return [fullBuild(context)];
   }
   
   @override

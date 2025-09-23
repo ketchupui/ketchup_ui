@@ -1,0 +1,35 @@
+// ignore_for_file: constant_identifier_names
+import 'pt.basic.const.dart';
+
+// const PT_123456 = '$PT_1,$PT_2,$PT_3,$PT_4,$PT_5,$PT_6';
+const PT_12345_6 = '$PT_12345,$PT_6';
+const PT_1234_56 = '$PT_1234,$PT_56';
+const PT_1234_5_6 = '$PT_1234,$PT_5,$PT_6';
+const PT_123_456 = '$PT_123,$PT_456';
+const PT_123_45_6 = '$PT_123,$PT_45,$PT_6';
+const PT_123_4_56 = '$PT_123,$PT_4,$PT_56';
+const PT_123_4_5_6 = '$PT_123,$PT_4,$PT_5,$PT_6';
+const PT_12_3456 = '$PT_12,$PT_3456';
+const PT_12_345_6 = '$PT_12,$PT_345,$PT_6';
+const PT_12_34_56 = '$PT_12,$PT_34,$PT_56';
+const PT_12_34_5_6 = '$PT_12,$PT_34,$PT_5,$PT_6';
+const PT_12_3_456 = '$PT_12,$PT_3,$PT_456';
+const PT_12_3_45_6 = '$PT_12,$PT_3,$PT_45,$PT_6';
+const PT_12_3_4_56 = '$PT_12,$PT_3,$PT_4,$PT_56';
+const PT_12_3_4_5_6 = '$PT_12,$PT_3,$PT_4,$PT_5,$PT_6';
+const PT_1_23456 = '$PT_1,$PT_23456';
+const PT_1_2345_6 = '$PT_1,$PT_2345,$PT_6';
+const PT_1_234_56 = '$PT_1,$PT_234,$PT_56';
+const PT_1_234_5_6 = '$PT_1,$PT_234,$PT_5,$PT_6';
+const PT_1_23_456 = '$PT_1,$PT_23,$PT_456';
+const PT_1_23_45_6 = '$PT_1,$PT_23,$PT_45,$PT_6';
+const PT_1_23_4_56 = '$PT_1,$PT_23,$PT_4,$PT_56';
+const PT_1_23_4_5_6 = '$PT_1,$PT_23,$PT_4,$PT_5,$PT_6';
+const PT_1_2_3456 = '$PT_1,$PT_2,$PT_3456';
+const PT_1_2_345_6 = '$PT_1,$PT_2,$PT_345,$PT_6';
+const PT_1_2_34_56 = '$PT_1,$PT_2,$PT_34,$PT_56';
+const PT_1_2_34_5_6 = '$PT_1,$PT_2,$PT_34,$PT_5,$PT_6';
+const PT_1_2_3_456 = '$PT_1,$PT_2,$PT_3,$PT_456';
+const PT_1_2_3_45_6 = '$PT_1,$PT_2,$PT_3,$PT_45,$PT_6';
+const PT_1_2_3_4_56 = '$PT_1,$PT_2,$PT_3,$PT_4,$PT_56';
+// const PT_1_2_3_4_5_6 = '$PT_1,$PT_2,$PT_3,$PT_4,$PT_5,$PT_6';

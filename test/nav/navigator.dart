@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ketchup_ui/debug/console.dart';
 import 'package:ketchup_ui/ketchup_ui.dart';
+import 'package:ketchup_ui/nav/core.dart';
+import 'package:ketchup_ui/nav/route_finder.dart';
 
 void main(){
   group('Test Navigator Tools', (){
@@ -224,7 +226,7 @@ void main(){
   });
 
   group('Test Navigator Behaviors', (){
-    NavigaterBuilder navigaterBuilder = NavigaterBuilder(ca: EmptyContextAccessorImp(ScreenContext(rowColumn: (row: 1, column: 5))), contentPageClass: 3, routes: routes());
+    RouteHistoryNavigatorBuilderImpl navigaterBuilder = RouteHistoryNavigatorBuilderImpl(ca: EmptyContextAccessorImpl(ScreenContext(rowColumn: (row: 1, column: 5), singleAspectRatioSize: null)), contentPageClass: 3, routes: routes());
     
     find(String name){
       return (TestableRoutePage? page){

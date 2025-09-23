@@ -19,3 +19,34 @@ abstract class ContextAccessor implements ContextAccessorUpdate{
   // void Function(VoidCallback, [String? d]) get update;
   void lazyUpdate(VoidCallback c, [String? d, VoidCallback? afterUpdate]);
 }
+
+/// TODO: 没写完哈
+// class ContextAccessorImpl extends ContextAccessor {
+
+//   ContextAccessorImpl({required this.bgLayers, required this.fgLayers, required this.grid, required this.screen, required this.size, required setState});
+
+//   @override
+//   LayerContext bgLayers;
+
+//   @override
+//   LayerContext fgLayers;
+
+//   @override
+//   GridContext grid;
+
+//   @override
+//   void lazyUpdate(VoidCallback c, [String? d, VoidCallback? afterUpdate]) {
+//     // TODO: implement lazyUpdate
+//   }
+
+//   @override
+//   ScreenContext screen;
+
+//   @override
+//   Size size;
+
+//   @override
+//   // TODO: implement update
+//   void Function(VoidCallback p1, [String? d]) get update => throw UnimplementedError();
+  
+// }

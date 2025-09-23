@@ -1,106 +1,42 @@
 // ignore_for_file: constant_identifier_names
 
 import 'package:flutter/material.dart';
+import 'package:ketchup_ui/model/debugtool.dart';
 import '../state.dart';
 import 'context.dart';
 import 'grid.dart';
+import 'const/const.dart';
+export 'const/const.dart';
 
 enum CATEGORY { tv_gamepad, pc_mousekeyboard, mobile_gesture, all}
 
-typedef GKeyValueRecord = (GlobalKey, Rect?);
 typedef RCPair = ({int row, int column});
-// typedef ScreenPTNull = (String? singlePT, String? contextPT);
 typedef ScreenPT = (String singlePT, String contextPT);
 typedef ColumnPos = (int posLR, int posRL, int columns);
 
-const String PT_FULLSCREEN = 'fullscreen';
-const Null PT_CELL = null;
-const String PT_CELL_ABOVE_5 = 'cell_above_5';
-
-const String PT_COLUMN_ONE = PT_1;
-const String PT_COLUMN_TWO = '$PT_1,$PT_2';
-const String PT_COLUMN_THREE = '$PT_COLUMN_TWO,$PT_3';
-const String PT_COLUMN_FOUR = '$PT_COLUMN_THREE,$PT_4';
-const String PT_COLUMN_FIVE = '$PT_COLUMN_FOUR,$PT_5';
-
-const String PT_FULL_ONE = '($PT_1)';
-const String PT_FULL_TWO = PT_12;
-const String PT_FULL_THREE = PT_123;
-const String PT_FULL_FOUR = PT_1234;
-const String PT_FULL_FIVE = PT_12345;
-
-
-const String PT_12 = '(1-2)';
-const String PT_123 = '(1-2-3)';
-const String PT_1234 = '(1-2-3-4)';
-const String PT_12345 = '(1-2-3-4-5)';
-const String PT_23 = '(2-3)';
-const String PT_234 = '(2-3-4)';
-const String PT_2345 = '(2-3-4-5)';
-const String PT_34 = '(3-4)';
-const String PT_345 = '(3-4-5)';
-const String PT_45 = '(4-5)';
-
-const String PT_1 = '1';
-const String PT_2 = '2';
-const String PT_3 = '3';
-const String PT_4 = '4';
-const String PT_5 = '5';
-
-
-/// 五联屏语境
-const String PT_12_3_4_5 ='$PT_12,$PT_3,$PT_4,$PT_5';
-const String PT_1_23_4_5 ='$PT_1,$PT_23,$PT_4,$PT_5';
-const String PT_1_2_34_5 ='$PT_1,$PT_2,$PT_34,$PT_5';
-const String PT_12_34_5 ='$PT_12,$PT_34,$PT_5';
-const String PT_1_2_3_45 ='$PT_1,$PT_2,$PT_3,$PT_45';
-const String PT_12_3_45 ='$PT_12,$PT_3,$PT_45';
-const String PT_1_23_45 ='$PT_1,$PT_23,$PT_45';
-
-const String PT_123_4_5 ='$PT_123,$PT_4,$PT_5';
-const String PT_123_45 ='$PT_123,$PT_45';
-const String PT_1_234_5 ='$PT_1,$PT_234,$PT_5';
-const String PT_1_2_345 ='$PT_1,$PT_2,$PT_345';
-const String PT_12_345 ='$PT_12,$PT_345';
-
-const String PT_1234_5 ='$PT_1234,$PT_5';
-const String PT_1_2345 ='$PT_1,$PT_2345';
-
-/// 四联屏语境
-const String PT_12_3_4 ='$PT_12,$PT_3,$PT_4';
-const String PT_1_23_4 ='$PT_1,$PT_23,$PT_4';
-const String PT_1_2_34 ='$PT_1,$PT_2,$PT_34';
-const String PT_12_34 ='$PT_12,$PT_34';
-const String PT_123_4 ='$PT_123,$PT_4';
-const String PT_1_234 ='$PT_1,$PT_234';
-
-/// 三联屏语境
-const String PT_12_3 ='$PT_12,$PT_3';
-const String PT_1_23 ='$PT_1,$PT_23';
-
 enum TailColumnExpand { left, right, none }
-
-enum SingleMode { LR, RL, none }
+enum SinglePageMode { singleLR, singleRL, multi }
 
 class ScreenContext extends BaseContext{
-  ScreenContext({RUNMODE mode = RUNMODE.debug, Size? singleAspectRatioSize, TailColumnExpand tailColumnExpand = TailColumnExpand.none, required RCPair rowColumn }): 
-  _mode = mode, _singleAspectRatioSize = singleAspectRatioSize, _rowColumn = rowColumn , _tailColumnExpand = tailColumnExpand {
+  ScreenContext({RUNMODE mode = RUNMODE.debug, required Size? singleAspectRatioSize, TailColumnExpand tailColumnExpand = TailColumnExpand.none, required RCPair rowColumn, this.singlePageMode = SinglePageMode.multi}): 
+    debug = DebugToolContext(mode: mode), _singleAspectRatioSize = singleAspectRatioSize, _rowColumn = rowColumn , _tailColumnExpand = tailColumnExpand {
     /// 同时计算 fullscreenAspectRatioSize
     rowColumn = _rowColumn;
   }
+  
+  factory ScreenContext.fromRVG(ResponsiveValueGroup rvg) => ScreenContext( rowColumn: rvg.rowColumn, singleAspectRatioSize: rvg.singleAspectRatio );
 
-  factory ScreenContext.fromRVG(ResponsiveValueGroup rvg) => ScreenContext( rowColumn: rvg.rowColumn , singleAspectRatioSize: rvg.singleAspectRatio );
-
-  RUNMODE _mode;
+  // RUNMODE _mode;
   Size? _singleAspectRatioSize;
   Size? _fullscreenAspectRatioSize;
   TailColumnExpand _tailColumnExpand;
   RCPair _rowColumn;
+  DebugToolContext? debug;
   
   /// 初始化 Key
-  Map<String, GlobalKey> gKeys = {};
+  // Map<String, GlobalKey> gKeys = {};
   /// 跟测量相关
-  Map<String, GKeyValueRecord> gKeyMappedValues = {};
+  // Map<String, GKeyValueRecord> gKeyMappedValues = {};
 
   int get row => _rowColumn.row;
   int get column => _rowColumn.column;
@@ -113,23 +49,23 @@ class ScreenContext extends BaseContext{
   set rowColumn(RCPair rowColumn){
     _rowColumn = rowColumn;
 
-    gKeys.clear();
-    gKeyMappedValues.clear();
+    debug?.gKeys.clear();
+    debug?.gKeyMappedValues.clear();
     resetPattern();
   }
   
   /// 更改模式不引起重新布局
-  set mode(RUNMODE mode){
-    _mode = mode;
-    notifyListeners();
-  }
+  // set mode(RUNMODE mode){
+  //   _mode = mode;
+  //   notifyListeners();
+  // }
 
   /// 更改屏幕比例导致
   /// 重新测量 gKeyMappedValues.clear();
   set singleAspectRatioSize(Size? size){
     _singleAspectRatioSize = size;
     _fullscreenAspectRatioSize = size != null && TailColumnExpand.none == tailColumnExpand ? Size(size.width * column, size.height * row) : null;
-    gKeyMappedValues.clear();
+    debug?.gKeyMappedValues.clear();
     resetPattern();
   }
 
@@ -140,9 +76,9 @@ class ScreenContext extends BaseContext{
 
   Size? get fullscreenAspectRatioSize => _fullscreenAspectRatioSize;
 
-  bool get isNeedMeasure => gKeyMappedValues.isEmpty; 
+  // bool get isNeedMeasure => gKeyMappedValues.isEmpty; 
 
-  bool get measured => gKeyMappedValues.isNotEmpty;
+  // bool get measured => gKeyMappedValues.isNotEmpty;
 
   Size? get singleAspectRatioSize => _singleAspectRatioSize; 
 
@@ -150,7 +86,7 @@ class ScreenContext extends BaseContext{
 
   set tailColumnExpand(TailColumnExpand expand)=>_tailColumnExpand = expand;
 
-  RUNMODE get mode => _mode;
+  RUNMODE get mode => debug?.mode ?? RUNMODE.runtime;
 
   List<String> get singles => _currentPattern == PT_CELL ? List.generate(column, (index)=>'${index+1}') : _currentPattern!.split(',');
    /// 六联屏、七联屏(暂不设计)
@@ -188,59 +124,59 @@ class ScreenContext extends BaseContext{
   String? _lastPattern;
   /// 2025.8.31 新增 _currentSingle 仅在竖屏模式下使用表示展示当前单个屏幕语境(始终单栏)
   int _currentSingleIndex = -1;
-  SingleMode singleNextMode = SingleMode.none;
+  SinglePageMode singlePageMode;
 
-  String singleModeStartRL([int? index]){
-    singleNextMode = SingleMode.RL;
+  String singlePageStartRL([int? index]){
+    singlePageMode = SinglePageMode.singleRL;
     final tempIndex = index ?? _currentSingleIndex;
     _currentSingleIndex = tempIndex >= 0 && tempIndex <= singles.length - 1 ? tempIndex : singles.length - 1;
     // gKeyMappedValues.clear();
     return singleCurrentPT!;
   }
 
-  String singleModeStartLR([int? index]){
-    singleNextMode = SingleMode.LR;
+  String singlePageStartLR([int? index]){
+    singlePageMode = SinglePageMode.singleLR;
     final tempIndex = index ?? _currentSingleIndex;
     _currentSingleIndex = tempIndex >= 0 && tempIndex <= singles.length - 1 ? tempIndex : 0;
     // gKeyMappedValues.clear();
     return singleCurrentPT!;
   }
 
-  String? singleModeNext(){
+  String? singlePageNext(){
     _currentSingleIndex = singleNextIndex;
     return singleCurrentPT;
   }
 
-  String? singleModePrev(){
+  String? singlePagePrev(){
     _currentSingleIndex = singlePrevIndex;
     return singleCurrentPT;
   }
 
-  void singleModeStop(){
-    singleNextMode = SingleMode.none;
+  void singlePageStop(){
+    singlePageMode = SinglePageMode.multi;
     // gKeyMappedValues.clear();
   }
   
-  String? get singleCurrentPT => singleNextMode != SingleMode.none && _currentSingleIndex >=0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex] : null;
-  int get singleNextIndex => switch(singleNextMode){
-    SingleMode.none => -1,
-    SingleMode.RL => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? _currentSingleIndex - 1 : -1,
-    SingleMode.LR => _currentSingleIndex + 1 < singles.length ? _currentSingleIndex + 1 : -1
+  String? get singleCurrentPT => singlePageMode != SinglePageMode.multi && _currentSingleIndex >=0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex] : null;
+  int get singleNextIndex => switch(singlePageMode){
+    SinglePageMode.multi => -1,
+    SinglePageMode.singleRL => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? _currentSingleIndex - 1 : -1,
+    SinglePageMode.singleLR => _currentSingleIndex + 1 < singles.length ? _currentSingleIndex + 1 : -1
   };
-  String? get singleNextPT => switch(singleNextMode){
-    SingleMode.none => null,
-    SingleMode.RL => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex - 1] : null,
-    SingleMode.LR => _currentSingleIndex + 1 < singles.length ? singles[_currentSingleIndex + 1] : null
+  String? get singleNextPT => switch(singlePageMode){
+    SinglePageMode.multi => null,
+    SinglePageMode.singleRL => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex - 1] : null,
+    SinglePageMode.singleLR => _currentSingleIndex + 1 < singles.length ? singles[_currentSingleIndex + 1] : null
   };
-  int get singlePrevIndex => switch(singleNextMode){
-    SingleMode.none => -1,
-    SingleMode.RL => _currentSingleIndex + 1 < singles.length ? _currentSingleIndex + 1 : -1,
-    SingleMode.LR => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? _currentSingleIndex - 1 : -1,
+  int get singlePrevIndex => switch(singlePageMode){
+    SinglePageMode.multi => -1,
+    SinglePageMode.singleRL => _currentSingleIndex + 1 < singles.length ? _currentSingleIndex + 1 : -1,
+    SinglePageMode.singleLR => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? _currentSingleIndex - 1 : -1,
   };
-  String? get singlePrevPT => switch(singleNextMode){
-    SingleMode.none => null,
-    SingleMode.RL => _currentSingleIndex + 1 < singles.length ? singles[_currentSingleIndex + 1] : null,
-    SingleMode.LR => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex - 1] : null,
+  String? get singlePrevPT => switch(singlePageMode){
+    SinglePageMode.multi => null,
+    SinglePageMode.singleRL => _currentSingleIndex + 1 < singles.length ? singles[_currentSingleIndex + 1] : null,
+    SinglePageMode.singleLR => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex - 1] : null,
   };
 
   set currentPatternNullable(String? current){
@@ -248,13 +184,13 @@ class ScreenContext extends BaseContext{
     _currentPattern = current;
     /// 确保生命周期 onMeasured 每次都执行
     // if(_currentPattern != _lastPattern){
-    gKeyMappedValues.clear();
+    debug?.gKeyMappedValues.clear();
     // }
   } 
 
   void autoSetPatternByColumnNum(){
     currentPatternNullable = switch(column){
-      5=>PT_COLUMN_FIVE, 4=>PT_COLUMN_FOUR, 3=>PT_COLUMN_THREE, 2=>PT_COLUMN_TWO, 1=>PT_COLUMN_ONE, _=>PT_CELL
+      7=>PT_COLUMN_SEVEN, 6=>PT_COLUMN_SIX, 5=>PT_COLUMN_FIVE, 4=>PT_COLUMN_FOUR, 3=>PT_COLUMN_THREE, 2=>PT_COLUMN_TWO, 1=>PT_COLUMN_ONE, _=>PT_CELL
     };
   }
 
@@ -265,9 +201,9 @@ class ScreenContext extends BaseContext{
   
   String? get currentPatternNullable => _currentPattern;
   String get currentPattern => _currentPattern == null ? switch(column){
-    1=>PT_COLUMN_ONE,2=>PT_COLUMN_TWO,3=>PT_COLUMN_THREE,4=>PT_COLUMN_FOUR,5=>PT_COLUMN_FIVE,_=>PT_CELL_ABOVE_5
+    1=>PT_COLUMN_ONE,2=>PT_COLUMN_TWO,3=>PT_COLUMN_THREE,4=>PT_COLUMN_FOUR,5=>PT_COLUMN_FIVE,6=>PT_COLUMN_SIX,7=>PT_COLUMN_SEVEN,_=>PT_CELL_ABOVE_7
   } : (currentPatternNullable == PT_FULLSCREEN ? switch(column){
-    1=>PT_FULL_ONE,2=>PT_FULL_TWO,3=>PT_FULL_THREE,4=>PT_FULL_FOUR,5=>PT_FULL_FIVE,_=>PT_FULLSCREEN
+    1=>PT_FULL_ONE,2=>PT_FULL_TWO,3=>PT_FULL_THREE,4=>PT_FULL_FOUR,5=>PT_FULL_FIVE,6=>PT_FULL_SIX,7=>PT_FULL_SEVEN,_=>PT_FULLSCREEN
   } : currentPatternNullable!);
   String? get lastPattern => _lastPattern; 
   
@@ -283,6 +219,10 @@ class ScreenContext extends BaseContext{
     PT_2345: Colors.accents[10][100]!,
     PT_FULLSCREEN: Colors.accents[13][100]!
   };
+
+
+  /// 用于拼画设置(把相临的两个屏幕拼合或者拆开)
+  @Deprecated('only for old version project')
   Map<int, Map<String, Map<String?, String?>>> contextScreenPatternsMap = {
     5: {
       PT_12:{
@@ -357,27 +297,10 @@ class ScreenContext extends BaseContext{
       }
     }
   };
-  Map<int, Map<String, List<String>>> contextScreenPatterns = {
-    5: {
-      '2+1拼画': [PT_12_3_4_5, PT_1_23_4_5, PT_1_2_34_5, PT_1_2_3_45],
-      '2+2拼画': [PT_12_34_5, PT_12_3_45, PT_1_23_45],
-      '3+1拼画': [PT_123_4_5, PT_1_234_5, PT_1_2_345],
-      '3+2拼画': [PT_123_45, PT_12_345],
-      '4+1拼画': [PT_1234_5, PT_1_2345]
-    },
-    4: {
-      '2+1拼画': [PT_12_3_4, PT_1_23_4, PT_1_2_34],
-      '2+2拼画': [PT_12_34],
-      '3+1拼画': [PT_123_4, PT_1_234],
-    },
-    3:{
-      '2+1拼画': [PT_12_3,PT_1_23]
-    }
-  };
 
   Rect? measuredCell(int column, [int row = 1]){
-    if(measured){
-      var data = gKeyMappedValues['cell-$column-$row'];
+    if(debug?.measured ?? false){
+      var data = debug!.gKeyMappedValues['cell-$column-$row'];
       return data?.$2;
     }
     return null;
@@ -385,8 +308,8 @@ class ScreenContext extends BaseContext{
 
   /// 包含 cell-x-1 的情况
   Rect? measuredPT(String singlePT){
-    if(measured){
-      var data = gKeyMappedValues[singlePT] ?? (row == 1 ? gKeyMappedValues['cell-$singlePT-1'] : null);
+    if(debug?.measured ?? false){
+      var data = debug!.gKeyMappedValues[singlePT] ?? (row == 1 ? debug!.gKeyMappedValues['cell-$singlePT-1'] : null);
       return data?.$2;
     }
     return null;
@@ -423,7 +346,7 @@ class ScreenContext extends BaseContext{
 
   Rect? paintRect(String singlePT){
     if(singleCurrentPT != null) return currentSize != null ? Offset.zero & currentSize! : null;
-    if(measured){
+    if(debug?.measured ?? false){
       var data = measuredPT(singlePT);
       if(data != null){
         return data;
@@ -431,8 +354,8 @@ class ScreenContext extends BaseContext{
       /// 如果没有现成的需要计算
       var range = cellRange(singlePT);
       if(range != null){
-        final fromStartCell = gKeyMappedValues[range.$1];
-        final toEndCell = gKeyMappedValues[range.$2];
+        final fromStartCell = debug!.gKeyMappedValues[range.$1];
+        final toEndCell = debug!.gKeyMappedValues[range.$2];
         if(fromStartCell != null && fromStartCell.$2 != null && toEndCell != null && toEndCell.$2 != null){
           return fromStartCell.$2!.expandToInclude(toEndCell.$2!);
         }
@@ -485,20 +408,50 @@ class ScreenContext extends BaseContext{
     return false;
   }
 
+  String screenPTFromColumnsLR(int column){
+    return singles.firstWhere((pt){
+      final pos = columnPosFromScreenPT(pt)!;
+      return column >= pos.$1 && column <= pos.$2;
+    });
+  }
+
   static ColumnPos? columnPosFromScreenPT(String singlePT){
     switch(singlePT){
+      case PT_1234567:
+        return (1, 7, 7);
+
+      case PT_123456:
+        return (1, 6, 6);
+      case PT_234567:
+        return (2, 7, 6);
+
       case PT_12345:
         return (1, 5, 5);
+      case PT_23456:
+        return (2, 6, 5);
+      case PT_34567:
+        return (3, 7, 5);
+        
       case PT_1234:
         return (1, 4, 4);
       case PT_2345:
         return (2, 5, 4);
+      case PT_3456:
+        return (3, 6, 4);
+      case PT_4567:
+        return (4, 7, 4);
+        
       case PT_123:
         return (1, 3, 3);
       case PT_234:
         return (2, 4, 3);
       case PT_345:
         return (3, 5, 3);
+      case PT_456:
+        return (4, 6, 3);
+      case PT_567:
+        return (5, 7, 3);
+        
       case PT_12:
         return (1, 2, 2);
       case PT_23:
@@ -507,6 +460,11 @@ class ScreenContext extends BaseContext{
         return (3, 4, 2);
       case PT_45:
         return (4, 5, 2);
+      case PT_56:
+        return (5, 6, 2);
+      case PT_67:
+        return (6, 7, 2);
+
       case PT_1:
         return (1, 1, 1);
       case PT_2:
@@ -517,22 +475,64 @@ class ScreenContext extends BaseContext{
         return (4, 4, 1);
       case PT_5:
         return (5, 5, 1);
+      case PT_6:
+        return (6, 6, 1);
+      case PT_7:
+        return (7, 7, 1);
       default: 
         return null;
     }
   }
-  
-  String screenPTFromColumnsLR(int column){
-    return singles.firstWhere((pt){
-      final pos = columnPosFromScreenPT(pt)!;
-      return column >= pos.$1 && column <= pos.$2;
-    });
+
+  static String? ptFromState(int fromL, List<bool> combinedStates, int maxColumn){
+    assert(fromL > 0 && fromL <= maxColumn && combinedStates.isNotEmpty);
+    if(fromL + combinedStates.length > maxColumn) return null;
+    List<int> columns = [];
+    int? prevCombined;
+    bool? prevState;
+    for(int i = 0; i< combinedStates.length; i++){
+      final isCombined = combinedStates[i];
+      if(!isCombined){
+        if(prevCombined != null) { columns.add(prevCombined); prevCombined = null; }
+        if(prevState != true) columns.add(1);
+      }else{
+        prevCombined = prevCombined != null ? prevCombined + 1 : 2;
+      }
+      prevState = isCombined;
+    }
+    if(prevCombined != null) columns.add(prevCombined);
+    if(prevState == false) columns.add(1);
+    return genScreenPTColumnsLR(columns, fromL, maxColumn)?.join(',');
+  }
+
+  static (int fromL, List<bool>)? combinedState(String singleOrContextPT){
+    List<bool> result = [];
+    int? firstIndex;
+    // 遍历每个字符
+    for (int i = 0; i < singleOrContextPT.length; i++) {
+      String char = singleOrContextPT[i];
+      
+      if (char == ',') {
+        result.add(false); // 逗号表示分隔符
+      } else if (char == '-') {
+        result.add(true);  // 横杠表示连接符
+      } else {
+        firstIndex ??= int.tryParse(char);
+      }
+      // 忽略数字和括号，只关注分隔符
+    }
+    if(firstIndex != null){
+      return (firstIndex, result);
+    }
+    return null;
   }
 
   static String? screenPTColumnsLR(int fromStartLR, int columns){
     switch(fromStartLR){
       case 1:
         return switch(columns){
+          7=>PT_1234567,
+          6=>PT_123456,
           5=>PT_12345,
           4=>PT_1234,
           3=>PT_123,
@@ -542,6 +542,8 @@ class ScreenContext extends BaseContext{
         };
       case 2:
         return switch(columns){
+          6=>PT_234567,
+          5=>PT_23456,
           4=>PT_2345,
           3=>PT_234,
           2=>PT_23,
@@ -550,6 +552,8 @@ class ScreenContext extends BaseContext{
         };
       case 3:
         return switch(columns){
+          5=>PT_34567,
+          4=>PT_3456,
           3=>PT_345,
           2=>PT_34,
           1=>PT_3,
@@ -557,13 +561,28 @@ class ScreenContext extends BaseContext{
         };
       case 4:
         return switch(columns){
+          4=>PT_4567,
+          3=>PT_456,
           2=>PT_45,
           1=>PT_4,
           _=>null
         };
       case 5:
         return switch(columns){
+          3=>PT_567,
+          2=>PT_56,
           1=>PT_5,
+          _=>null
+        };
+      case 6:
+        return switch(columns){
+          2=>PT_67,
+          1=>PT_6,
+          _=>null
+        };
+      case 7:
+        return switch(columns){
+          1=>PT_7,
           _=>null
         };
       default: 
@@ -573,6 +592,27 @@ class ScreenContext extends BaseContext{
 
   static String? screenPTColumnsRL(int fromStartRL, int columns){
     switch(fromStartRL){
+      case 7:
+        return switch(columns){
+          7=>PT_1234567,
+          6=>PT_234567,
+          5=>PT_34567,
+          4=>PT_4567,
+          3=>PT_567,
+          2=>PT_67,
+          1=>PT_7,
+          _=>null
+        };
+      case 6:
+        return switch(columns){
+          6=>PT_123456,
+          5=>PT_23456,
+          4=>PT_3456,
+          3=>PT_456,
+          2=>PT_56,
+          1=>PT_6,
+          _=>null
+        };
       case 5:
         return switch(columns){
           5=>PT_12345,
@@ -613,9 +653,9 @@ class ScreenContext extends BaseContext{
     }
   }
 
-  static List<String>? genScreenPTColumnsLR(List<int> columnsLR, int maxColumn){
+  static List<String>? genScreenPTColumnsLR(List<int> columnsLR, int fromL, int maxColumn){
     if(columnsLR.length > maxColumn || columnsLR.fold<int>(0, (total, added)=>total+added) > maxColumn ) return null;
-    var fromStart = 1, index = 0;
+    var fromStart = fromL, index = 0;
     List<String> list = [];
     while(fromStart <= maxColumn){
       var willFillColumns = index < columnsLR.length ?  columnsLR[index] : 1;
@@ -650,29 +690,29 @@ class ScreenContext extends BaseContext{
   }
 
   String? genContextPTColumnsLR(List<int> columnsLR){
-    return genScreenPTColumnsLR(columnsLR, column)?.join(',');
+    return genScreenPTColumnsLR(columnsLR, 1, column)?.join(',');
   }
 
   String? genContextPTColumnsRL(List<int> columnsRL){
     return genScreenPTColumnsRL(columnsRL, column)?.join(',');
   }
   
-  final List<VoidCallback> _measuredCbs = [];
+  // final List<VoidCallback> _measuredCbs = [];
 
-  void produceMeasuredCb(VoidCallback measuredCb){
-    _measuredCbs.add(measuredCb);
-  }
+  // void produceMeasuredCb(VoidCallback measuredCb){
+  //   _measuredCbs.add(measuredCb);
+  // }
   
-  VoidCallback? get consumeMeasuredCb => _measuredCbs.isEmpty ? null : (){
-    while(_measuredCbs.isNotEmpty){
-      _measuredCbs.removeLast()();
-    }
-  };
+  // VoidCallback? get consumeMeasuredCb => _measuredCbs.isEmpty ? null : (){
+  //   while(_measuredCbs.isNotEmpty){
+  //     _measuredCbs.removeLast()();
+  //   }
+  // };
 
   /// 根据当前 singlePT 获得 - 的分割比例，用于绘制拼屏网格线(物理拼缝，不包含在grid中)
   List<double> Function(Size size)? columnSplits(String singlePT){
     /// 2025.9.10 单屏模式就是容器宽度
-    if(singleNextMode != SingleMode.none) return (Size size) => [.0, size.width];
+    if(singlePageMode != SinglePageMode.multi) return (Size size) => [.0, size.width];
     if(singlePT == PT_FULLSCREEN && column <= 5) singlePT = screenPTColumnsLR(1, column) ?? singlePT;
     if(singlePT.contains('cell') || !singlePT.contains('-')) return null;
     final divides = singlePT.split('-').length;
@@ -689,5 +729,26 @@ class ScreenContext extends BaseContext{
       return (Size size)=>List.generate(divides - 1, (index)=>size.width * (index + 1) / divides);
     }
     return null;
+  }
+
+  List<String> get columnSpanPTs => switch(column){
+    3 => [PT_12, PT_23],
+    4 => [PT_12, PT_23, PT_34],
+    5 => [PT_12, PT_23, PT_34, PT_45],
+    6 => [PT_12, PT_23, PT_34, PT_45, PT_56],
+    7 => [PT_12, PT_23, PT_34, PT_45, PT_56, PT_67],
+    _ => [],
+  };
+
+  ScreenContext createVirtual(String singlePT){
+    final flagTailInclude = isTailInclude(singlePT);
+    final singleRC = columnPosFromScreenPT(singlePT);
+    final createRC = (row: rowColumn.row, column: singleRC!.$3);
+    return ScreenContext(
+      mode: mode, 
+      rowColumn: createRC, 
+      singlePageMode: singlePageMode,
+      singleAspectRatioSize: singleAspectRatioSize, 
+      tailColumnExpand: flagTailInclude ? tailColumnExpand : TailColumnExpand.none);
   }
 }
