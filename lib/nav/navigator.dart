@@ -1,30 +1,34 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
+import 'package:ketchup_ui/animation.dart';
+import 'package:ketchup_ui/nav/vscreen_state.dart';
+import 'package:ketchup_ui/utils.dart';
 import '../model/model.dart';
+import '../model/screen/page_manager.dart';
 import '../route.dart';
 import '../state.dart';
 import 'core.dart';
 import 'route_finder.dart';
 import 'utils.dart';
 
-class CachePage with MultiColumns{
+class PageCache with MultiColumns{
   ScreenPT? screenPT;
   final String? onCreatePath;
-  final KetchupRoutePage? page;
-  CachePage({ this.page, this.onCreatePath, this.screenPT });
+  final FocusRoutePage page;
+  PageCache({required this.page, this.onCreatePath, this.screenPT });
 
-  bool get isBlank => page == null;
-  factory CachePage.blank()=>CachePage();
-  factory CachePage.pathPage(String onCreatePath, KetchupRoutePage page)=>CachePage(onCreatePath: onCreatePath, page: page);
-  factory CachePage.nopathPage(KetchupRoutePage page)=>CachePage(page: page);
-  factory CachePage.changePT(CachePage cache, ScreenPT screenPT)=>CachePage(screenPT: screenPT, onCreatePath: cache.onCreatePath, page: cache.page);
+  // bool get isBlank => page == null;
+  // factory CachePage.blank()=>CachePage();
+  factory PageCache.pathPage(String onCreatePath, FocusRoutePage page)=>PageCache(onCreatePath: onCreatePath, page: page);
+  factory PageCache.nopathPage(FocusRoutePage page)=>PageCache(page: page);
+  factory PageCache.changePT(PageCache cache, ScreenPT screenPT)=>PageCache(screenPT: screenPT, onCreatePath: cache.onCreatePath, page: cache.page);
   
   @override
-  List<int> get availableColumns => page is MultiColumns ? (page as MultiColumns).availableColumns : [1];
+  List<int> get availableColumns => page.availableColumns;
   
 }
 
-typedef PageClassCache = (int pageClass, int columns, CachePage?);
+typedef PageClassColumnsCache = (int pageClass, int columns, PageCache?);
 
 // typedef Navigatable<T> = (int, int, T);
 // typedef NavigatableList<T> = List<Navigatable<T>>;
@@ -38,7 +42,7 @@ typedef BuiltPageTestBuilder<T> = BuiltPageTest<T> Function(String);
 
 class IndexedIntentPage{
   final int column;
-  final KetchupRoutePage page;
+  final FocusRoutePage page;
   final Map<String, String>? recieveParams;
   const IndexedIntentPage(this.column, this.page, [this.recieveParams]);
 }
@@ -59,23 +63,53 @@ abstract class HistoryCacheInterface {
   void forward();
 }
 
-abstract class BasicNavigatorBuilder extends NavigatorCore<CachePage>{
+abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
+
+  BasicNavigatorBuilder({NavCtntPair<PageCache>? initPair}) : __currentPair = initPair ?? ([],[]);
 
   ScreenContext get screen;
-  Map<String, CachePage>? get cachePathPages;
+  Map<String, PageCache>? get cachePathPages;
 
   @override
   int get screenColumn => screen.column;
 
-  NavCtntPair<CachePage> __currentPair = ([],[]);
-  NavigatableList<CachePage> get currentNavPairList => [ ...__currentPair.$1, ...__currentPair.$2 ];
-  List<CachePage> get currentCachePages => currentNavPairList.map((cache)=>cache.$3).toList();
+  NavCtntPair<PageCache> __currentPair;
+  NavCtntPair<PageCache> get currentPair => __currentPair;
+  NavigatableList<PageCache> get currentNavPairList => [ ...__currentPair.$1, ...__currentPair.$2 ];
+  List<PageCache> get currentCachePages => currentNavPairList.map((cache)=>cache.$3).toList();
+
+  // Map<String, ScreenContext>? get currentVScreenMap {
+  //   final ret = {};
+  //   for(var cache in currentCachePages){
+  //     if(cache.page is VScreenKetchupRoutePage){
+  //       final cachePage = cache.page as VScreenKetchupRoutePage;
+  //       if(cachePage.virtualScreen != null){
+  //         ret.putIfAbsent(cachePage.vscreenState., ifAbsent)
+  //       }
+  //     }
+  //   }
+  //   return currentCachePages.where((cache)=>cache.page is VScreenKetchupRoutePage && cache.page).map<MapEntry>((VScreenKetchupRoutePage page)=>MapEntry(page.));
+  // }
+
   List<int> get currentColumnsLR => currentNavPairList.map((cache)=>cache.$2).toList();
   String? get currentContextPT => screen.genContextPTColumnsLR(currentColumnsLR);
   List<String>? get currentScreenPTs => ScreenContext.genScreenPTColumnsLR(currentColumnsLR, 1, screen.column);
-  void lazyUpdate(VoidCallback c, [String? d, VoidCallback? afterUpdate]);
 
-  void adjustScreenColumnChangeWait()=>adjustScreenColumnChange(callUpdate: false);
+  void onColumnsChange(int screenColumn){
+    adjustScreenColumnChangeWait();
+  }
+  
+  void onMeasured(){
+    navDebug('#$hashCode-nav.onMeasured');
+    for (var cache in currentCachePages) {
+      cache.page?.onMeasured(screen);
+    }
+  }
+
+  void navUpdate(VoidCallback c, [String? d]);
+  // void measureUpdate(VoidCallback c, [String? d, VoidCallback? afterUpdate]);
+
+  void adjustScreenColumnChangeWait({ String? debugInfo, AnimationController? animCtrl })=>adjustScreenColumnChange(debugInfo: debugInfo, animCtrl: animCtrl, callUpdate: false);
 
   /// 适应屏幕栏目数调整{
   void adjustScreenColumnChange({ String? debugInfo, AnimationController? animCtrl, bool callUpdate = true,}){
@@ -98,9 +132,9 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<CachePage>{
     AnimationController? animCtrl, bool callUpdate = true}){
     currentPagesUnload();
     /// 忽略 contentPageClass
-    final navList = intentsLR.mapIndexed<Navigatable<CachePage>>((index, intent)=>(screenColumn - index, intent.column,CachePage.nopathPage(intent.page..onReceive(intent.recieveParams)))).toList();
+    final navList = intentsLR.mapIndexed<Navigatable<PageCache>>((index, intent)=>(screenColumn - index, intent.column,PageCache.nopathPage(intent.page..onReceive(intent.recieveParams)))).toList();
     /// 页面等级全部 = contentPageClass
-    final ctnList = intentsRL.mapIndexed<Navigatable<CachePage>>((index, intent)=>(contentPageClass, intent.column,CachePage.nopathPage(intent.page..onReceive(intent.recieveParams)))).toList().reversed.toList();
+    final ctnList = intentsRL.mapIndexed<Navigatable<PageCache>>((index, intent)=>(contentPageClass, intent.column,PageCache.nopathPage(intent.page..onReceive(intent.recieveParams)))).toList().reversed.toList();
     __currentPair = expandCollapse((navList, ctnList), screenColumn)!;
     for(final cache in currentCachePages){
       cache.page!.onCreate();
@@ -108,19 +142,19 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<CachePage>{
     _pageReceivedWillChangePT(null, 'indexedIntents', animCtrl, callUpdate);
   }
 
-  void directGotoPageWait(int pageClass, int targetColumn, KetchupRoutePage page, {Map<String, String>? constructParams, String? debugInfo, AnimationController? animCtrl}){
-    _pageReadyWillReceive(null, page, null, constructParams, pageClass, targetColumn, false, debugInfo, animCtrl, false);
+  void directGotoPageWait(int pageClass, int targetColumn, FocusRoutePage page, {Map<String, String>? receiveParams, String? debugInfo, AnimationController? animCtrl, bool autoExpand = true}){
+    _pageReadyWillReceive(null, page, null, receiveParams, pageClass, targetColumn, false, debugInfo: debugInfo, animCtrl: animCtrl, callUpdate: false, expand: autoExpand);
   }
   
-  void directGotoPage(int pageClass, int targetColumn, KetchupRoutePage page, {Map<String, String>? constructParams, String? debugInfo, AnimationController? animCtrl}){
-    _pageReadyWillReceive(null, page, null, constructParams, pageClass, targetColumn, false, debugInfo, animCtrl);
+  void directGotoPage(int pageClass, int targetColumn, FocusRoutePage page, {Map<String, String>? receiveParams, String? debugInfo, AnimationController? animCtrl, bool autoExpand = true}){
+    _pageReadyWillReceive(null, page, null, receiveParams, pageClass, targetColumn, false, debugInfo: debugInfo, animCtrl: animCtrl, expand: autoExpand);
   }
 
-  void removePagesWait(List<KetchupRoutePage> pages,{AnimationController? animCtrl}){
+  void removePagesWait(List<FocusRoutePage> pages,{AnimationController? animCtrl}){
     removePages(pages, animCtrl: animCtrl, callUpdate: false);
   }
 
-  void removePages(List<KetchupRoutePage> pages, {AnimationController? animCtrl, bool callUpdate = true}){
+  void removePages(List<FocusRoutePage> pages, {AnimationController? animCtrl, bool callUpdate = true}){
     for(final page in pages){
       __currentPair.$1.removeWhere((cached){
         if(cached.$3.page == page){
@@ -144,17 +178,17 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<CachePage>{
     
   }
   
-  void _pageReadyWillReceive(CachePage? cachePage, KetchupRoutePage page, String? path, Map<String, String>? onRecieveParams, int pageClass, int targetColumn, bool shouldCallResume, [ String? debugInfo, AnimationController? animCtrl, bool callUpdate = true]){
-    page.onReceive(onRecieveParams);
+  void _pageReadyWillReceive(PageCache? cachePage, FocusRoutePage page, String? path, Map<String, String>? receiveParams, int pageClass, int targetColumn, bool shouldCallResume, { String? debugInfo, AnimationController? animCtrl, bool callUpdate = true, bool expand = true }){
+    page.onReceive(receiveParams);
     /// NavigatorPage 和 NavigatorPageWidget 是两个类
-    if(page is MultiColumns){
-      print('param:$onRecieveParams');
-      print('pageClass:$pageClass');
-      print('availableColumns:${(page as MultiColumns).availableColumns}');
+    print('param:$receiveParams');
+    print('pageClass:$pageClass');
+    print('availableColumns:${(page as MultiColumns).availableColumns}');
+    if(expand){
       targetColumn = availableColumns((page as MultiColumns).availableColumns, pageClass).first;
     }
-
-    var willReplacePair = shiftExpand(__currentPair, (pageClass, targetColumn, cachePage ?? CachePage.nopathPage(page)));
+  
+    var willReplacePair = (expand ?  shiftExpand : shift).call(__currentPair, (pageClass, targetColumn, cachePage ?? PageCache.nopathPage(page)));
     for (var rElement in willReplacePair.$2) {
       rElement.$3.page?.onPause();
       rElement.$3.screenPT = null;
@@ -179,66 +213,136 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<CachePage>{
     _pageReceivedWillChangePT(path, debugInfo, animCtrl, callUpdate);
   }
 
-  void _pageReceivedWillChangePT([ String? path, String? debugInfo, AnimationController? animCtrl, bool callUpdate = true]){
-    var merged = mergeScreenPT<Navigatable<CachePage>>(currentScreenPTs!, currentContextPT!, currentNavPairList);
+  List<(ScreenPT, Navigatable<PageCache>)> get screenPTCachePageList => mergeScreenPT<Navigatable<PageCache>>(currentScreenPTs!, currentContextPT!, currentNavPairList);
+  
+  void _pageScreenPTChangeDo(void Function(ScreenPT?, ScreenPT, PageCache) it){
+    for (var item in screenPTCachePageList) {
+      final oldScreenPT = item.$2.$3.screenPT;
+      final newScreenPT = item.$1;
+      if(oldScreenPT.toString() != newScreenPT.toString()) it(oldScreenPT, newScreenPT, item.$2.$3);
+    }
+  }
 
-    endCall(){
+  void _pageReceivedWillChangePT([ String? path, String? debugInfo, AnimationController? animCtrl, bool callUpdate = true]){
+
+    void endCall(){
       screen.currentPatternNullable = currentContextPT;
       if(callUpdate) untilUpdate(debugInfo: debugInfo, path: path);
     }
+    
+    _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
+      cache.page?.onScreenWillChange(newPT);
+    });
+    
+    /// 此处插入 vscreenMap
+    if(animCtrl != null){
+      _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
+        final anim = cache.page?.willPlayAnimated(fromPT: oldPT, toPT: newPT, animCtrl: animCtrl);
+        if(anim != null){
+          GroupedAnimationManager.instance.addController('navigator', anim, onGroupMembersCompleted: () {
+            endCall();
+            GroupedAnimationManager.instance.dispose();
+          },);
+        }
+      });
+      /// 统一播放
+      GroupedAnimationManager.instance.playGroup('navigator', duration: Duration(seconds: 2));
+      // if(GroupedAnimationManager.instance.hasGroup('navigator')){
+      //   GroupedAnimationManager.instance..onAllCompleted = (){
+      //     endCall();
+      //     GroupedAnimationManager.instance.dispose();
+      //   }..playGroup('navigator', duration: Duration(seconds: 2));
+      // }
+    }
 
-    List<AnimationStatusListener> listeners = [];
-    AnimationStatusListener addListener(AnimationStatusListener listener){
-      listeners.add(listener);
-      return listener;
-    }
-    AnimationStatusListener removeFirst(){
-      return listeners.removeAt(0);
-    }
-    for (var indexed in merged.indexed) {
-      final oldScreenPT = indexed.$2.$2.$3.screenPT;
-      if(oldScreenPT.toString() != indexed.$2.$1.toString()){
-        indexed.$2.$2.$3.page?.onScreenWillChange(indexed.$2.$1);
-        indexed.$2.$2.$3.screenPT = indexed.$2.$1;
-        
-        /// 5月26日 新增-页面跳转动画 Hook 第一个结束动画就触发 onMeasured
-        if(animCtrl != null && indexed.$2.$2.$3.page != null){
-          final anim = indexed.$2.$2.$3.page!.willPlayAnimated(fromPT: oldScreenPT, toPT: indexed.$2.$1, animCtrl: animCtrl);
-          anim
-            ..duration = Duration(milliseconds: 1300)
-            ..addStatusListener(addListener((AnimationStatus status){
-              if(status.isCompleted){
-                animCtrl.removeStatusListener(removeFirst());
-                if(listeners.isEmpty){
-                  endCall();
-                }
-              }
-            }))
-            ..forward();
+    final Map<String, VScreenFocusPageManager> vscreenMap = {};
+    _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
+      if(cache.page is VScreenKetchupRoutePage){
+        final cachePage = cache.page as VScreenKetchupRoutePage;
+        if(cachePage.virtualScreen != null){
+          vscreenMap.update(newPT.$1, (_) => cachePage.virtualScreen as VScreenFocusPageManager, ifAbsent: () => cachePage.virtualScreen as VScreenFocusPageManager,);
         }
       }
-    }
+    });
+    screen.currentPatternVirtualMap = vscreenMap;
 
-    if(listeners.isEmpty){
-      endCall();
-    }
+    /// 之后不能再调此函数
+    _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
+      cache.screenPT = newPT;
+    });
+    
+    if(animCtrl == null) endCall();
+
   }
 
-  void untilUpdate({String? debugInfo, String? path, VoidCallback? allMeasured}){
-    lazyUpdate((){
-      },'${debugInfo ?? 'untilUpdate'}=${path ?? 'nopath'}', (){
-        for (var cache in currentCachePages) {
-          cache.page!.onMeasured(screen);
-        }
-        allMeasured?.call();
-      });
+  // void _pageReceivedWillChangePT([ String? path, String? debugInfo, AnimationController? animCtrl, bool callUpdate = true]){
+    
+  //   endCall(){
+  //     screen.currentPatternNullable = currentContextPT;
+  //     if(callUpdate) untilUpdate(debugInfo: debugInfo, path: path);
+  //   }
+
+  //   List<AnimationStatusListener> listeners = [];
+    
+  //   AnimationStatusListener addListener(AnimationStatusListener listener){
+  //     listeners.add(listener);
+  //     return listener;
+  //   }
+
+  //   AnimationStatusListener removeFirst(){
+  //     return listeners.removeAt(0);
+  //   }
+
+  //   for (var item in screenPTCachePageList) {
+  //     final oldScreenPT = item.$2.$3.screenPT;
+  //     final newScreenPT = item.$1;
+  //     final page = item.$2.$3.page;
+  //     if(oldScreenPT.toString() != newScreenPT.toString()){
+        
+  //       page?.onScreenWillChange(item.$1);
+
+  //       item.$2.$3.screenPT = item.$1;
+        
+  //       /// 5月26日 新增-页面跳转动画 Hook 第一个结束动画就触发 onMeasured
+  //       if(animCtrl != null && page != null){
+  //         final anim = page.willPlayAnimated(fromPT: oldScreenPT, toPT: item.$1, animCtrl: animCtrl);
+  //         anim
+  //           ..duration = Duration(milliseconds: 1300)
+  //           ..addStatusListener(addListener((AnimationStatus status){
+  //             if(status.isCompleted){
+  //               animCtrl.removeStatusListener(removeFirst());
+  //               if(listeners.isEmpty){
+  //                 endCall();
+  //               }
+  //             }
+  //           }))
+  //           ..forward();
+  //       }
+  //     }
+  //   }
+
+  //   if(listeners.isEmpty){
+  //     endCall();
+  //   }
+  // }
+
+  void untilUpdate({String? debugInfo, String? path, VoidCallback? afterMeasured}){
+    navUpdate((){
+      if(afterMeasured != null){
+        WidgetsBinding.instance.addPostFrameCallback((_){
+          afterMeasured();
+        });
+      }
+    },'${debugInfo ?? 'untilUpdate'}=${path ?? 'nopath'}');
   }
+
   
-  ScreensBuilder get screensBuilder => (BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT){
+  
+  ColumnsBuilder get columnsBuilder => (BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT){
     if(currentScreenPTs != null){
       for(var cScreenPT in currentScreenPTs!.indexed){
         if((cScreenPT.$2, currentContextPT).toString() == screenPT.toString() && cScreenPT.$1 < currentCachePages.length){
-          return currentCachePages[cScreenPT.$1].page?.columnBuild(context, ctxAccessor, screenPT);
+          return currentCachePages[cScreenPT.$1].page?.columnsBuild(context, ctxAccessor, screenPT);
         }
       }
       return null;
@@ -246,6 +350,10 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<CachePage>{
       return null;
     }
   };
+
+  List<T> type<T>([bool includeCache = false]){
+    return currentCachePages.map((cache)=>cache.page).whereType<T>().toList();
+  }
 }
 
 abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with RouteFinder implements ContextAccessor{
@@ -260,9 +368,9 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
   final Map<String, (KetchupRoute, Map<String, String>)> __cachePathRoutes = {};
   /// 有数据表示可以使用 cachePage
   /// 没有数据可能有页面正在展示，需要从 KetchupRoute 重新创建一个 CachePage(相同页面多个Tab页，页面克隆)
-  final Map<String, CachePage> __cachePathPages = {};
+  final Map<String, PageCache> __cachePathPages = {};
   @override
-  Map<String, CachePage>? get cachePathPages => __cachePathPages;
+  Map<String, PageCache>? get cachePathPages => __cachePathPages;
 
   // NavCtntPair<CachePage> __currentPair = ([],[]);
 
@@ -321,8 +429,8 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
   // List<String>? get currentScreenPTs => ScreenContext.genScreenPTColumnsLR(currentColumnsLR, screen.column);
 
   Iterable<P> findBuiltPages<P>({BuiltPageTest<P>? test, bool includeCache = true}){
-    Iterable<P> res = (<CachePage>[]..addAll(currentCachePages) ..addAll(includeCache ? __cachePathPages.values : []))
-    .map<KetchupRoutePage?>((cache)=>cache.page)
+    Iterable<P> res = (<PageCache>[]..addAll(currentCachePages) ..addAll(includeCache ? __cachePathPages.values : []))
+    .map<FocusRoutePage?>((cache)=>cache.page)
     .whereType<P>();
     if(test != null){
       return res.where(test);
@@ -333,22 +441,21 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
 
   /// 重要函数(查找当前或者内存页面)
   P? findBuiltPage<P>(BuiltPageTest<P?> test, {bool includeCache = true}){
-    return (<CachePage>[]..addAll(currentCachePages) ..addAll(includeCache ? __cachePathPages.values : []))
-    .map<KetchupRoutePage?>((cache)=>cache.page)
+    return (<PageCache>[]..addAll(currentCachePages) ..addAll(includeCache ? __cachePathPages.values : []))
+    .map<FocusRoutePage?>((cache)=>cache.page)
     .whereType<P?>()
     .firstWhere(test, orElse: () => null,);
   }
 
   // List<CachePage> get currentCachePages => [ ...__currentPair.$1, ...__currentPair.$2 ].map((cache)=>cache.$3).toList();
 
-  
-
+  @override
   List<T> type<T>([bool includeCache = false]){
     return (currentCachePages ..addAll(includeCache ? __cachePathPages.values : [])).map((cache)=>cache.page).whereType<T>().toList();
   }
 
-  void go(String route){
-  }
+  // void go(String route){
+  // }
 
   void animPushWait(String route, AnimationController animCtrl)=>animPush(route, animCtrl, false);
   void animPush(String route, AnimationController animCtrl, [bool callUpdate = true]) => push(route, animCtrl, callUpdate);
@@ -405,13 +512,13 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
       Map<String,String> param = routeParam.$2;
       int pageClass = screen.column - (int.tryParse(param['_level'] ?? '1') ?? 1) + 1;
       int targetColumn = pageClass;
-      CachePage? cachePage = __cachePathPages.remove(path);
+      PageCache? cachePage = __cachePathPages.remove(path);
       bool isFromCache = cachePage != null;
       if(!isFromCache){
-        cachePage = CachePage.pathPage(path, route.ketchupPageBuilder!());
+        cachePage = PageCache.pathPage(path, route.ketchupPageBuilder!());
       }
       _pageReadyWillReceive(cachePage,
-        cachePage.page!, path, { ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() }, pageClass, targetColumn, isFromCache, debugInfo, animCtrl, callUpdate);
+        cachePage.page!, path, { ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() }, pageClass, targetColumn, isFromCache, debugInfo: debugInfo, animCtrl: animCtrl, callUpdate: callUpdate);
     }
   }
 
@@ -615,11 +722,11 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
   }
 
   @override
-  ScreensBuilder get screensBuilder => (BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT){
+  ColumnsBuilder get columnsBuilder => (BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT){
     if(currentScreenPTs != null){
       for(var cScreenPT in currentScreenPTs!.indexed){
         if((cScreenPT.$2, currentContextPT).toString() == screenPT.toString() && cScreenPT.$1 < currentCachePages.length){
-          return currentCachePages[cScreenPT.$1].page?.columnBuild(context, ctxAccessor, screenPT);
+          return currentCachePages[cScreenPT.$1].page?.columnsBuild(context, ctxAccessor, screenPT);
         }
       }
       return null;
@@ -630,9 +737,9 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
   
 }
 
-class EmptyContextAccessorImpl implements ContextAccessor{
+class EmptyCaImplTester implements ContextAccessor{
 
-  EmptyContextAccessorImpl(this.screen);
+  EmptyCaImplTester(this.screen);
   
   @override
   LayerContext get bgLayers => SimpleLayerContext();
@@ -645,13 +752,6 @@ class EmptyContextAccessorImpl implements ContextAccessor{
 
   @override
   ScreenContext screen;
-
-  @override
-  void lazyUpdate(VoidCallback c, [String? d, VoidCallback? updated]) {
-    if(updated != null){
-      updated();
-    }
-  }
   
   @override
   void Function(VoidCallback p1, [String? d]) get update => (VoidCallback p1, [String? d]){
@@ -686,10 +786,10 @@ class RouteHistoryNavigatorBuilderImpl extends RouteHistoryNavigatorBuilder{
   @override
   ScreenContext get screen => ca.screen;
 
-  @override
-  void lazyUpdate(VoidCallback c, [String? d, VoidCallback? updated]) {
-    return ca.lazyUpdate(c, d, updated);
-  }
+  // @override
+  // void measureUpdate(VoidCallback c, [String? d, VoidCallback? afterMeasured]) {
+  //   return ca.measureUpdate(c, d, afterMeasured);
+  // }
   
   @override
   void Function(VoidCallback p1, [String? d]) get update => ca.update;
@@ -697,6 +797,9 @@ class RouteHistoryNavigatorBuilderImpl extends RouteHistoryNavigatorBuilder{
   @override
   Size get size => ca.size;
   
+  @override
+  void navUpdate(VoidCallback c, [String? d]) => ca.update;
+
 }
 
 mixin HasNavMixin implements ContextAccessor{

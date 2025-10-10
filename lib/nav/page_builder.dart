@@ -1,29 +1,24 @@
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart' hide FocusManager;
 
 import '../debug/console.dart';
+import '../remote_focus/focus.dart';
 import '../model/accessor.dart';
-import '../model/screen.dart';
+import '../model/screen/screen.dart';
 import '../route.dart';
 import '../state.dart';
 import 'core.dart';
 
+class SimpleNavigatorPageBuilder extends NavigatorPage {
 
+  final WidgetsBuilder? fgBuilder;
+  final WidgetsBuilder? bgBuilder;
+  final ColumnsBuilder? columnsBuilder;
 
-class SimpleNavigatorPageBuilder extends NavigatorPage{
+  SimpleNavigatorPageBuilder({required this.availableColumns, this.bgBuilder, this.fgBuilder, this.columnsBuilder});
 
-  final WidgetBuilder? builder;
-  final ScreensBuilder? widgetsBuilder;
-
-  SimpleNavigatorPageBuilder({required this.availableColumns, this.builder, this.widgetsBuilder});
-
-  factory SimpleNavigatorPageBuilder.maxPageLevel(int maxPageLevel, ScreensBuilder widgetsBuilder)=>SimpleNavigatorPageBuilder(availableColumns: List.generate(maxPageLevel, (col)=>col), widgetsBuilder: widgetsBuilder);
+  factory SimpleNavigatorPageBuilder.maxPageLevel(int maxPageLevel, ColumnsBuilder columnsBuilder)=>SimpleNavigatorPageBuilder(availableColumns: List.generate(maxPageLevel, (col)=>col), columnsBuilder: columnsBuilder);
   
-  @override
-  Widget fullBuild(BuildContext context) {
-    return builder?.call(context) ?? Container();
-  }
-
   @override
   void onDestroy() {
   }
@@ -37,11 +32,14 @@ class SimpleNavigatorPageBuilder extends NavigatorPage{
   }
   
   @override
-  List<Widget>? columnBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
-    if(widgetsBuilder != null){
-      return widgetsBuilder!.call(context, ctxAccessor, screenPT);
+  List<Widget>? columnsBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
+    if(columnsBuilder != null){
+      return columnsBuilder!.call(context, ctxAccessor, screenPT);
     }
-    return [fullBuild(context)];
+    return [
+      ... bgFullBuild(context) ?? [],
+      ... fgFullBuild(context) ?? [],
+    ];
   }
   
   @override
@@ -61,6 +59,16 @@ class SimpleNavigatorPageBuilder extends NavigatorPage{
   
   @override
   void onReceive(Map<String, String>? params) {
+  }
+  
+  @override
+  List<Widget>? bgFullBuild(BuildContext context) {
+    return bgFullBuild(context);
+  }
+  
+  @override
+  List<Widget>? fgFullBuild(BuildContext context) {
+    return fgFullBuild(context);
   }
   
 }
@@ -88,11 +96,11 @@ class SimpleMultiColumnsImp extends MultiColumns{
   }
 }
 
-abstract class NavPageWidget extends StatelessWidget with KetchupRoutePage, MultiColumns implements PageLifeCycle{
-  const NavPageWidget({super.key});
+abstract class NavPageWidget extends StatelessWidget with FocusRoutePage, FocusManager, MultiColumns implements PageLifeCycle{
+  NavPageWidget({super.key});
 }
 
-abstract class NavigatorPage extends KetchupRoutePage with MultiColumns {
+abstract class NavigatorPage extends FocusRoutePage with MultiColumns, FocusManager{
 
   /// 用于根据栏目数确定权值，不支持栏目数则返回 0
   /// 根据是否是新页面来进行新页面提权
@@ -122,11 +130,6 @@ class TestableRoutePage extends NavigatorPage with vConsole{
   factory TestableRoutePage.bothends(int columns, {String name = DEFAULT_NAME})=>TestableRoutePage(name, MultiColumns.bothends(columns));
   factory TestableRoutePage.even(int columns, {String name = DEFAULT_NAME})=>TestableRoutePage(name, MultiColumns.even(columns));
   factory TestableRoutePage.odds(int columns, {String name = DEFAULT_NAME})=>TestableRoutePage(name, MultiColumns.odds(columns));
-  
-  @override
-  Widget fullBuild(BuildContext context) {
-    return Container();
-  }
 
   @override
   void onCreate() {
@@ -149,8 +152,11 @@ class TestableRoutePage extends NavigatorPage with vConsole{
   }
 
   @override
-  List<Widget>? columnBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
-    return [fullBuild(context)];
+  List<Widget>? columnsBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
+    return [
+      ... bgFullBuild(context) ?? [],
+      ... fgFullBuild(context) ?? [],
+    ];
   }
   
   @override
@@ -168,6 +174,16 @@ class TestableRoutePage extends NavigatorPage with vConsole{
   
   @override
   void onReceive(Map<String, String>? params) {
+  }
+  
+  @override
+  List<Widget>? bgFullBuild(BuildContext context) {
+    return null;
+  }
+  
+  @override
+  List<Widget>? fgFullBuild(BuildContext context) {
+    return null;
   }
   
 }

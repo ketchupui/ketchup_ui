@@ -37,7 +37,7 @@ abstract class ContextPainterObject extends CustomPainter with ChangeNotifier{
   
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    if(oldDelegate is CPO) return oldDelegate.paintRect != paintRect ;
+    // if(oldDelegate is CPO) return oldDelegate.paintRect != paintRect ;
     return true;
   }
 

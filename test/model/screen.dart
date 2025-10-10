@@ -205,4 +205,328 @@ void main(){
       expect(ScreenContext.ptFromState(1, [true, false, false, true, true, true], 7), PT_12_3_4567);
     });
   });  
+
+  group('Test vscreen page manager', (){
+    final simple = SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['1','2','(3-4-5)','(6-7)','8'], null);
+    test('(LR)SinglePageManager.singlePageNext', (){
+      expect(simple.focusPageSingleLR(), '1');
+      /// state
+      expect(simple.focusPagePrevPT, null);
+      expect(simple.focusPageCurrentPT, '1');
+      expect(simple.focusPageNextPT, '2');
+      /// action
+      expect(simple.focusPageNext(), '2');
+      /// state
+      expect(simple.focusPagePrevPT, '1');
+      expect(simple.focusPageCurrentPT, '2');
+      expect(simple.focusPageNextPT, '(3-4-5)');
+      /// action
+      expect(simple.focusPageNext(), '(3-4-5)');
+      /// state
+      expect(simple.focusPagePrevPT, '2');
+      expect(simple.focusPageCurrentPT, '(3-4-5)');
+      expect(simple.focusPageNextPT, '(6-7)');
+      /// action
+      expect(simple.focusPageNext(), '(6-7)');
+      /// state
+      expect(simple.focusPagePrevPT, '(3-4-5)');
+      expect(simple.focusPageCurrentPT, '(6-7)');
+      expect(simple.focusPageNextPT, '8');
+      /// action
+      expect(simple.focusPageNext(), '8');
+      /// state
+      expect(simple.focusPagePrevPT, '(6-7)');
+      expect(simple.focusPageCurrentPT, '8');
+      expect(simple.focusPageNextPT, null);
+    });
+    test('(LR)SinglePageVirtualScreenTester.singlePagePrev', (){
+      /// action
+      expect(simple.focusPagePrev(), '(6-7)');
+      /// state
+      expect(simple.focusPagePrevPT, '(3-4-5)');
+      expect(simple.focusPageCurrentPT, '(6-7)');
+      expect(simple.focusPageNextPT, '8');
+      /// action
+      expect(simple.focusPagePrev(), '(3-4-5)');
+      /// state
+      expect(simple.focusPagePrevPT, '2');
+      expect(simple.focusPageCurrentPT, '(3-4-5)');
+      expect(simple.focusPageNextPT, '(6-7)');
+      /// action
+      expect(simple.focusPagePrev(), '2');
+      /// state
+      expect(simple.focusPagePrevPT, '1');
+      expect(simple.focusPageCurrentPT, '2');
+      expect(simple.focusPageNextPT, '(3-4-5)');
+      /// action
+      expect(simple.focusPagePrev(), '1');
+      /// state
+      expect(simple.focusPagePrevPT, null);
+      expect(simple.focusPageCurrentPT, '1');
+      expect(simple.focusPageNextPT, '2');
+    });
+    test('(simpleLR)SinglePageManager.vscreenSinglePageNext', (){
+      /// action
+      expect(simple.vscreenFocusPageNext(), ['2']);
+      /// state
+      expect(simple.focusPagePrevPT, '1');
+      expect(simple.vscreenFocusPrevIndexList, [0]);
+      expect(simple.focusPageCurrentPT, '2');
+      expect(simple.vscreenFocusCurrentIndexList, [1]);
+      expect(simple.focusPageNextPT, '(3-4-5)');
+      expect(simple.vscreenFocusNextIndexList, [2]);
+      /// action
+      expect(simple.vscreenFocusPageNext(), ['(3-4-5)']);
+      /// state
+      expect(simple.focusPagePrevPT, '2');
+      expect(simple.focusPageCurrentPT, '(3-4-5)');
+      expect(simple.focusPageNextPT, '(6-7)');
+      /// action
+      expect(simple.vscreenFocusPageNext(), ['(6-7)']);
+      /// state
+      expect(simple.focusPagePrevPT, '(3-4-5)');
+      expect(simple.focusPageCurrentPT, '(6-7)');
+      expect(simple.focusPageNextPT, '8');
+      /// action
+      expect(simple.vscreenFocusPageNext(), ['8']);
+      /// state
+      expect(simple.focusPagePrevPT, '(6-7)');
+      expect(simple.focusPageCurrentPT, '8');
+      expect(simple.focusPageNextPT, null);
+    });
+    test('(simpleLR)SinglePageManager.vscreenSinglePagePrev', (){
+      /// action
+      expect(simple.vscreenFocusPagePrev(), ['(6-7)']);
+      /// state
+      expect(simple.focusPagePrevPT, '(3-4-5)');
+      expect(simple.focusPageCurrentPT, '(6-7)');
+      expect(simple.focusPageNextPT, '8');
+      /// action
+      expect(simple.vscreenFocusPagePrev(), ['(3-4-5)']);
+      /// state
+      expect(simple.focusPagePrevPT, '2');
+      expect(simple.focusPageCurrentPT, '(3-4-5)');
+      expect(simple.focusPageNextPT, '(6-7)');
+      /// action
+      expect(simple.vscreenFocusPagePrev(), ['2']);
+      /// state
+      expect(simple.focusPagePrevPT, '1');
+      expect(simple.focusPageCurrentPT, '2');
+      expect(simple.focusPageNextPT, '(3-4-5)');
+      /// action
+      expect(simple.vscreenFocusPagePrev(), ['1']);
+      /// state
+      expect(simple.focusPagePrevPT, null);
+      expect(simple.focusPageCurrentPT, '1');
+      expect(simple.focusPageNextPT, '2');
+    });
+    /// https://immvpc32u2.feishu.cn/docx/Bq2adq4zPo8fUSxqzzRckqb4nUP#share-THfCd1EXxoAeBBx18yqcjuNFnWe
+    final vscreenLR = createVirtualScreenTester();
+    test('(LR)SinglePageManager.vscreenSinglePageNext', (){
+      expect(vscreenLR.vscreenFocusPageSingleLR(), [0, 0, 0, 0]); /// ['(1-2-3-4-5-6-7)', '(1-2-3)', '1', '1']
+      /// state
+      expect(vscreenLR.vscreenFocusPageCurrent(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '1', '1']);
+
+      expect(vscreenLR.vscreenFocusPrevIndexList, []);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 0, 0, 0]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 0, 1, 0]);
+      /// action
+      expect(vscreenLR.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '2', '1']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 0, 0, 0]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 0, 1, 0]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 0, 2]);
+      /// action
+      expect(vscreenLR.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '3']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 0, 1, 0]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 0, 2]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0 , 1]);
+      /// action
+      expect(vscreenLR.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '4']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 0, 2]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0 , 1]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 2, 0, 0]);
+      /// action
+      expect(vscreenLR.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '1', '1']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 1]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 2, 0, 0]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 2, 1]);
+      /// action
+      expect(vscreenLR.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '2']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 2, 0, 0]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 2, 1]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 2, 2, 0]);
+      /// action
+      expect(vscreenLR.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '3', '1']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0 ,2, 1]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0 ,2, 2, 0]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [1]);
+      /// action
+      expect(vscreenLR.vscreenFocusPageNext(), ['8']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0 ,2, 2, 0]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [1]);
+      expect(vscreenLR.vscreenFocusNextIndexList, []);
+    });
+    test('(LR)SinglePageManager.vscreenSinglePagePrev', (){
+      /// action
+      expect(vscreenLR.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '3', '1']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0 ,2, 1]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0 ,2, 2, 0]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [1]);
+      /// action
+      expect(vscreenLR.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '2']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 2, 0, 0]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 2, 1]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 2, 2, 0]);
+      /// action
+      expect(vscreenLR.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '1', '1']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 1]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 2, 0, 0]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 2, 1]);
+      /// action
+      expect(vscreenLR.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '4']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 0, 2]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0 , 1]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 2, 0, 0]);
+      /// action
+      expect(vscreenLR.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '3']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 0, 1, 0]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 0, 2]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0 , 1]);
+      /// action
+      expect(vscreenLR.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '2', '1']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, [0, 0, 0, 0]);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 0, 1, 0]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 0, 2]);
+      /// action
+      expect(vscreenLR.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '1', '1']);
+      /// state
+      expect(vscreenLR.vscreenFocusPrevIndexList, []);
+      expect(vscreenLR.vscreenFocusCurrentIndexList, [0, 0, 0, 0]);
+      expect(vscreenLR.vscreenFocusNextIndexList, [0, 0, 1, 0]);
+    });
+    
+    final vscreenRL = createVirtualScreenTester();
+    test('(RL)SinglePageManager.vscreenSinglePageNext', (){
+      expect(vscreenRL.vscreenFocusPageSingleRL(), [1]);/// ['8']
+      expect(vscreenRL.vscreenFocusPageCurrent(), ['8']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, []);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [1]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0 ,2, 2, 0]);
+      /// action
+      expect(vscreenRL.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '3', '1']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [1]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0 ,2, 2, 0]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0 ,2, 1]);
+      /// action
+      expect(vscreenRL.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '2']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 2, 2, 0]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 2, 1]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 2, 0, 0]);
+      /// action
+      expect(vscreenRL.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '1', '1']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 2, 1]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 2, 0, 0]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 1]);
+      /// action
+      expect(vscreenRL.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '4']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 2, 0, 0]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 1]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 0, 2]);
+      /// action
+      expect(vscreenRL.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '3']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0 , 1]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 0, 2]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 0, 1, 0]);
+      /// action
+      expect(vscreenRL.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '2', '1']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 0, 2]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 0, 1, 0]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 0, 0, 0]);
+      /// action
+      expect(vscreenRL.vscreenFocusPageNext(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '1', '1']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 0, 1, 0]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 0, 0, 0]);
+      expect(vscreenRL.vscreenFocusNextIndexList, []);
+    });
+    test('(RL)SinglePageManager.vscreenSinglePagePrev', (){
+      /// action
+      expect(vscreenRL.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '2', '1']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 0, 2]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 0, 1, 0]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 0, 0, 0]);
+      /// action
+      expect(vscreenRL.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(1-2-3)', '3']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0 , 1]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 0, 2]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 0, 1, 0]);
+      /// action
+      expect(vscreenRL.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '4']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 2, 0, 0]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 1]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 0, 2]);
+      /// action
+      expect(vscreenRL.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '1', '1']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 2, 1]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 2, 0, 0]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 1]);
+      /// action
+      expect(vscreenRL.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '2']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [0, 2, 2, 0]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0, 2, 1]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0, 2, 0, 0]);
+      /// action
+      expect(vscreenRL.vscreenFocusPagePrev(), ['(1-2-3-4-5-6-7)', '(5-6-7)', '3', '1']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, [1]);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [0 ,2, 2, 0]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0 ,2, 1]);
+      /// action
+      expect(vscreenRL.vscreenFocusPagePrev(), ['8']);
+      /// state
+      expect(vscreenRL.vscreenFocusPrevIndexList, []);
+      expect(vscreenRL.vscreenFocusCurrentIndexList, [1]);
+      expect(vscreenRL.vscreenFocusNextIndexList, [0 ,2, 2, 0]);
+    });
+  });
+
+  
 }
+
+SinglePageVirtualScreenTester createVirtualScreenTester() => SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['(1-2-3-4-5-6-7)','8'], {
+  '(1-2-3-4-5-6-7)': SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['(1-2-3)','4','(5-6-7)'], {
+    '(1-2-3)': SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['1','2','3'], {
+        '1': SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['1'], null),
+        '2': SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['1'], null),
+      }),
+    '(5-6-7)': SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['1','2','3'], {
+        '1': SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['1'], null),
+        '3': SinglePageVirtualScreenTester(FocusPageMode.multiLR, ['1'], null),
+      }),
+  })
+});

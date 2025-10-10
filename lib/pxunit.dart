@@ -74,8 +74,8 @@ PxUnitValueGetter<Rect> vhRect(Rect rect) => (Size viewport) => rect.topLeft * p
 PxUnitValueGetter<Rect> vhRectOnlySize(Rect rect) => (Size viewport) => rect.topLeft & rect.size * pxUnitGetter(PxUnit.vh)(viewport);
 
 
-// PxUnitDoubleGetter vh(double value) => pxUnitDoubleGetter((value, PxUnit.vh));
-// PxUnitDoubleGetter vw(double value) => pxUnitDoubleGetter((value, PxUnit.vw));
+PxUnitDoubleGetter vh(double value) => pxUnitDoubleGetter((value, PxUnit.vh));
+PxUnitDoubleGetter vw(double value) => pxUnitDoubleGetter((value, PxUnit.vw));
 PxUnitDoubleGetter vmin(double value) => pxUnitDoubleGetter((value, PxUnit.vmin));
 PxUnitDoubleGetter vmax(double value) => pxUnitDoubleGetter((value, PxUnit.vmax));
 PxUnitDoubleGetter rpx(double value) => pxUnitDoubleGetter((value, PxUnit.rpx));

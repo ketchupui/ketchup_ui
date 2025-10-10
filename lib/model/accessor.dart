@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'grid.dart';
 import 'layer.dart';
-import 'screen.dart';
+import 'screen/screen.dart';
 
 abstract class ContextAccessorUpdate{
   void Function(VoidCallback, [String? d]) get update;
@@ -17,7 +17,7 @@ abstract class ContextAccessor implements ContextAccessorUpdate{
   Size get size;
   // void Function(VoidCallback) get update;
   // void Function(VoidCallback, [String? d]) get update;
-  void lazyUpdate(VoidCallback c, [String? d, VoidCallback? afterUpdate]);
+  // void measureUpdate(VoidCallback c, [String? d, VoidCallback? afterMeasured]);
 }
 
 /// TODO: 没写完哈

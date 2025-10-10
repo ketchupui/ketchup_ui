@@ -1,14 +1,18 @@
 
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+// ignore_for_file: non_constant_identifier_names
 
+import 'package:flutter/material.dart' hide FocusNode, FocusManager;
+import 'package:go_router/go_router.dart';
+import 'package:ketchup_ui/nav/core.dart';
+
+import 'remote_focus/focus.dart';
 import 'model/accessor.dart';
-import 'model/screen.dart';
+import 'model/screen/screen.dart';
 import 'state.dart';
 
 // typedef WeightGetter = int Function(int columns, bool isNewPage, int newPageClass, [ScreenPT]);
 
-typedef KetchupRoutePageBuilder = KetchupRoutePage Function();
+typedef FocusRoutePageBuilder = FocusRoutePage Function();
 
 abstract class PageLifeCycle{
   void onReceive(Map<String, String>? params);
@@ -20,14 +24,15 @@ abstract class PageLifeCycle{
   void onPause();
   void onDestroy();
   
-  List<Widget>? columnBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
-  Widget fullBuild(BuildContext context);
+  List<Widget>? columnsBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
+  List<Widget>? bgFullBuild(BuildContext context);
+  List<Widget>? fgFullBuild(BuildContext context);
 }
 
 /// 带有生命周期的页面
-abstract mixin class KetchupRoutePage implements PageLifeCycle{
+abstract mixin class FocusRoutePage implements MultiColumns, PageLifeCycle, FocusManager{
   // void onStateInit(void Function(VoidCallback c, [String? d]) stateUpdater);
-  
+
   @override
   AnimationController willPlayAnimated({ScreenPT? fromPT, required ScreenPT toPT, required AnimationController animCtrl}) {
     // TODO: implement willPlayAnimated
@@ -79,12 +84,19 @@ class KetchupRoute extends GoRoute{
   List<SepPath> get separates => parsePath(path);
   // bool get hasParams => !path.endsWith('/');
 
-  final KetchupRoutePageBuilder? ketchupPageBuilder;
+  final FocusRoutePageBuilder? ketchupPageBuilder;
 
   @override
   List<KetchupRoute> get routes => super.routes.cast<KetchupRoute>();
   
-  KetchupRoute({required super.path, this.ketchupPageBuilder, GoRouterWidgetBuilder? builder, super.pageBuilder, super.routes}): super(builder: builder ?? (context, state) => ketchupPageBuilder!().fullBuild(context),) ;
+  KetchupRoute({required super.path, this.ketchupPageBuilder, GoRouterWidgetBuilder? builder, super.pageBuilder, super.routes}): 
+    super(builder: builder ?? (context, state) => Stack(children: (){
+      final routePage = ketchupPageBuilder!();
+      return <Widget>[
+        ... routePage.bgFullBuild(context) ?? [],
+        ... routePage.fgFullBuild(context) ?? [],
+      ];
+    }()));
 }
 
 class KetchupResponsiveMatchRouteSetting extends StatefulWidget{
@@ -94,9 +106,12 @@ class KetchupResponsiveMatchRouteSetting extends StatefulWidget{
   final ResponseAdaptiveCallback? cb;
 
   final List<RouteBase> routes;
-  final ScreensBuilder? screensBuilder;
+  final ColumnsBuilder columnsBuilder;
+  final WidgetsBuilder? fgFullBuilder;
+  final WidgetsBuilder? bgFullBuilder;
+  final VoidCallback measuredCb;
 
-  const KetchupResponsiveMatchRouteSetting({super.key, this.screensBuilder, this.statefulKey, required this.routes, this.responses,required this.init, this.cb});
+  const KetchupResponsiveMatchRouteSetting({super.key,required this.columnsBuilder, this.fgFullBuilder, this.bgFullBuilder,required this.measuredCb, this.statefulKey, required this.routes, this.responses,required this.init, this.cb});
 
   @override
   State<StatefulWidget> createState()=> _KetchupResponsiveMatchRouteSettingState();
@@ -109,7 +124,10 @@ class _KetchupResponsiveMatchRouteSettingState extends State<KetchupResponsiveMa
   Widget build(BuildContext context) {
     return Scaffold(
       body: KetchupUIResponsive(
-          screensBuilder: widget.screensBuilder,
+          columnsBuilder: widget.columnsBuilder,
+          bgFullBuilder: widget.bgFullBuilder,
+          fgFullBuilder: widget.fgFullBuilder,
+          measuredCb: widget.measuredCb,
           init: widget.init,
           statefulKey: widget.statefulKey,
           callbackBeforeRender: widget.cb,

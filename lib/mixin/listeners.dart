@@ -35,7 +35,9 @@ abstract class ChangeListenerNotifier<T>{
 
 mixin SizeChangeNotifier on Object{
 
-  Size? currentSize;
+  Rect? currentSizeRect;
+  Size? get currentSize => currentSizeRect?.size;
+
   final Map<String, List<SizeChangeListener>> _sizeChangeListenerMap = {
     DEFAULT_TAGNAME: [],
   };
@@ -62,12 +64,13 @@ mixin SizeChangeNotifier on Object{
 
   List<SizeChangeListener> get sizeList => _sizeChangeListenerMap.values.fold<List<SizeChangeListener>>([], (combineto, combined)=>combineto..addAll(combined));
   
-  void notifySizeChange(Size newSize, Size? oldSize){
-    // if(sizeList.isEmpty) return;
-    for (var listener in sizeList) {
-      listener.call(newSize, oldSize);
+  void notifySizeChange(Rect newSize, Rect? oldSize){
+    if(newSize.size != oldSize?.size){
+      for (var listener in sizeList) {
+        listener.call(newSize.size, oldSize?.size);
+      }
     }
-    currentSize = newSize;
+    currentSizeRect = newSize;
   }
 }
 

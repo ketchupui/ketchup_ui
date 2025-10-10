@@ -1,12 +1,13 @@
-// ignore_for_file: constant_identifier_names
+// ignore_for_file: constant_identifier_names, unnecessary_getters_setters, overridden_fields
 
 import 'package:flutter/material.dart';
 import 'package:ketchup_ui/model/debugtool.dart';
-import '../state.dart';
-import 'context.dart';
-import 'grid.dart';
-import 'const/const.dart';
-export 'const/const.dart';
+import '../../state.dart';
+import '../context.dart';
+import '../grid.dart';
+import '../const/const.dart';
+import 'page_manager.dart';
+export '../const/const.dart';
 
 enum CATEGORY { tv_gamepad, pc_mousekeyboard, mobile_gesture, all}
 
@@ -15,16 +16,38 @@ typedef ScreenPT = (String singlePT, String contextPT);
 typedef ColumnPos = (int posLR, int posRL, int columns);
 
 enum TailColumnExpand { left, right, none }
-enum SinglePageMode { singleLR, singleRL, multi }
+enum FocusPageMode { singleLR, singleRL, multiLR }
 
-class ScreenContext extends BaseContext{
-  ScreenContext({RUNMODE mode = RUNMODE.debug, required Size? singleAspectRatioSize, TailColumnExpand tailColumnExpand = TailColumnExpand.none, required RCPair rowColumn, this.singlePageMode = SinglePageMode.multi}): 
+class SinglePageVirtualScreenTester extends BaseScreenContext with FocusPageManager, VScreenFocusPageManager {
+  
+  SinglePageVirtualScreenTester(this.focusPageMode, this.singles, this.currentPatternVirtualMap): super(rowColumn: (row: 1, column: 1), singleAspectRatioSize: null);
+
+  @override
+  Map<String, VScreenFocusPageManager>? currentPatternVirtualMap;
+
+  @override
+  FocusPageMode focusPageMode;
+
+  @override
+  List<String> singles;
+}
+
+class ScreenParams {
+  final Size? singleAspectRatioSize;
+  final TailColumnExpand? tailColumnExpand;
+  final RCPair? rowColumn;
+  final FocusPageMode? focusPageMode;
+  const ScreenParams({this.singleAspectRatioSize, this.tailColumnExpand, this.rowColumn, this.focusPageMode});
+}
+
+abstract class BaseScreenContext extends BaseContext {
+
+  BaseScreenContext({RUNMODE mode = RUNMODE.debug, required Size? singleAspectRatioSize, TailColumnExpand tailColumnExpand = TailColumnExpand.none, required RCPair rowColumn, this.focusPageMode = FocusPageMode.multiLR}): 
     debug = DebugToolContext(mode: mode), _singleAspectRatioSize = singleAspectRatioSize, _rowColumn = rowColumn , _tailColumnExpand = tailColumnExpand {
     /// 同时计算 fullscreenAspectRatioSize
     rowColumn = _rowColumn;
   }
   
-  factory ScreenContext.fromRVG(ResponsiveValueGroup rvg) => ScreenContext( rowColumn: rvg.rowColumn, singleAspectRatioSize: rvg.singleAspectRatio );
 
   // RUNMODE _mode;
   Size? _singleAspectRatioSize;
@@ -87,6 +110,7 @@ class ScreenContext extends BaseContext{
   set tailColumnExpand(TailColumnExpand expand)=>_tailColumnExpand = expand;
 
   RUNMODE get mode => debug?.mode ?? RUNMODE.runtime;
+  set mode(RUNMODE runmode)=> debug?.mode = runmode;
 
   List<String> get singles => _currentPattern == PT_CELL ? List.generate(column, (index)=>'${index+1}') : _currentPattern!.split(',');
    /// 六联屏、七联屏(暂不设计)
@@ -122,63 +146,7 @@ class ScreenContext extends BaseContext{
   /// 1,(2,3)
   String? _currentPattern;
   String? _lastPattern;
-  /// 2025.8.31 新增 _currentSingle 仅在竖屏模式下使用表示展示当前单个屏幕语境(始终单栏)
-  int _currentSingleIndex = -1;
-  SinglePageMode singlePageMode;
-
-  String singlePageStartRL([int? index]){
-    singlePageMode = SinglePageMode.singleRL;
-    final tempIndex = index ?? _currentSingleIndex;
-    _currentSingleIndex = tempIndex >= 0 && tempIndex <= singles.length - 1 ? tempIndex : singles.length - 1;
-    // gKeyMappedValues.clear();
-    return singleCurrentPT!;
-  }
-
-  String singlePageStartLR([int? index]){
-    singlePageMode = SinglePageMode.singleLR;
-    final tempIndex = index ?? _currentSingleIndex;
-    _currentSingleIndex = tempIndex >= 0 && tempIndex <= singles.length - 1 ? tempIndex : 0;
-    // gKeyMappedValues.clear();
-    return singleCurrentPT!;
-  }
-
-  String? singlePageNext(){
-    _currentSingleIndex = singleNextIndex;
-    return singleCurrentPT;
-  }
-
-  String? singlePagePrev(){
-    _currentSingleIndex = singlePrevIndex;
-    return singleCurrentPT;
-  }
-
-  void singlePageStop(){
-    singlePageMode = SinglePageMode.multi;
-    // gKeyMappedValues.clear();
-  }
   
-  String? get singleCurrentPT => singlePageMode != SinglePageMode.multi && _currentSingleIndex >=0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex] : null;
-  int get singleNextIndex => switch(singlePageMode){
-    SinglePageMode.multi => -1,
-    SinglePageMode.singleRL => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? _currentSingleIndex - 1 : -1,
-    SinglePageMode.singleLR => _currentSingleIndex + 1 < singles.length ? _currentSingleIndex + 1 : -1
-  };
-  String? get singleNextPT => switch(singlePageMode){
-    SinglePageMode.multi => null,
-    SinglePageMode.singleRL => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex - 1] : null,
-    SinglePageMode.singleLR => _currentSingleIndex + 1 < singles.length ? singles[_currentSingleIndex + 1] : null
-  };
-  int get singlePrevIndex => switch(singlePageMode){
-    SinglePageMode.multi => -1,
-    SinglePageMode.singleRL => _currentSingleIndex + 1 < singles.length ? _currentSingleIndex + 1 : -1,
-    SinglePageMode.singleLR => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? _currentSingleIndex - 1 : -1,
-  };
-  String? get singlePrevPT => switch(singlePageMode){
-    SinglePageMode.multi => null,
-    SinglePageMode.singleRL => _currentSingleIndex + 1 < singles.length ? singles[_currentSingleIndex + 1] : null,
-    SinglePageMode.singleLR => _currentSingleIndex - 1  >= 0 && _currentSingleIndex < singles.length ? singles[_currentSingleIndex - 1] : null,
-  };
-
   set currentPatternNullable(String? current){
     _lastPattern = _currentPattern;
     _currentPattern = current;
@@ -319,7 +287,6 @@ class ScreenContext extends BaseContext{
   //   columnPosFromScreenPT(screenPT);
   //   /// 平分
   //   if(_singleAspectRatioSize == null){
-      
   //   }
   // }
 
@@ -345,7 +312,7 @@ class ScreenContext extends BaseContext{
   }
 
   Rect? paintRect(String singlePT){
-    if(singleCurrentPT != null) return currentSize != null ? Offset.zero & currentSize! : null;
+    // if(singleCurrentPT != null) return currentSizeRect;
     if(debug?.measured ?? false){
       var data = measuredPT(singlePT);
       if(data != null){
@@ -712,7 +679,7 @@ class ScreenContext extends BaseContext{
   /// 根据当前 singlePT 获得 - 的分割比例，用于绘制拼屏网格线(物理拼缝，不包含在grid中)
   List<double> Function(Size size)? columnSplits(String singlePT){
     /// 2025.9.10 单屏模式就是容器宽度
-    if(singlePageMode != SinglePageMode.multi) return (Size size) => [.0, size.width];
+    if(focusPageMode != FocusPageMode.multiLR) return (Size size) => [.0, size.width];
     if(singlePT == PT_FULLSCREEN && column <= 5) singlePT = screenPTColumnsLR(1, column) ?? singlePT;
     if(singlePT.contains('cell') || !singlePT.contains('-')) return null;
     final divides = singlePT.split('-').length;
@@ -739,16 +706,43 @@ class ScreenContext extends BaseContext{
     7 => [PT_12, PT_23, PT_34, PT_45, PT_56, PT_67],
     _ => [],
   };
+  
+  FocusPageMode focusPageMode;
 
-  ScreenContext createVirtual(String singlePT){
+  @override
+  void dispose() {
+    super.dispose();
+    debug?.dispose();
+  }
+}
+
+class ScreenContext extends BaseScreenContext with FocusPageManager, VScreenFocusPageManager {
+  ScreenContext({super.mode, required super.rowColumn, super.singleAspectRatioSize, super.focusPageMode, super.tailColumnExpand});
+  factory ScreenContext.fromRVG(ResponsiveValueGroup rvg) => ScreenContext( rowColumn: rvg.rowColumn, singleAspectRatioSize: rvg.singleAspectRatio );
+  
+  ScreenContext createVirtual(String singlePT, [ScreenParams? givenColumns]){
     final flagTailInclude = isTailInclude(singlePT);
     final singleRC = columnPosFromScreenPT(singlePT);
-    final createRC = (row: rowColumn.row, column: singleRC!.$3);
+    final createRC = (row:  givenColumns?.rowColumn?.row ?? rowColumn.row, column: givenColumns?.rowColumn?.column ?? singleRC!.$3);
     return ScreenContext(
       mode: mode, 
       rowColumn: createRC, 
-      singlePageMode: singlePageMode,
-      singleAspectRatioSize: singleAspectRatioSize, 
-      tailColumnExpand: flagTailInclude ? tailColumnExpand : TailColumnExpand.none);
+      focusPageMode: givenColumns?.focusPageMode ?? focusPageMode,
+      singleAspectRatioSize: givenColumns != null ? givenColumns.singleAspectRatioSize : singleAspectRatioSize, 
+      tailColumnExpand: givenColumns?.tailColumnExpand ?? flagTailInclude ? tailColumnExpand : TailColumnExpand.none);
+  }
+  
+  static ColumnPos? columnPosFromScreenPT(String singlePT) => BaseScreenContext.columnPosFromScreenPT(singlePT);
+  static String? ptFromState(int fromL, List<bool> combinedStates, int maxColumn) => BaseScreenContext.ptFromState(fromL, combinedStates, maxColumn);
+  static (int fromL, List<bool>)? combinedState(String singleOrContextPT) => BaseScreenContext.combinedState(singleOrContextPT);
+  static String? screenPTColumnsLR(int fromStartLR, int columns) => BaseScreenContext.screenPTColumnsLR(fromStartLR, columns);
+  static String? screenPTColumnsRL(int fromStartRL, int columns) => BaseScreenContext.screenPTColumnsRL(fromStartRL, columns);
+  static List<String>? genScreenPTColumnsLR(List<int> columnsLR, int fromL, int maxColumn) => BaseScreenContext.genScreenPTColumnsLR(columnsLR, fromL, maxColumn);
+  static List<String>? genScreenPTColumnsRL(List<int> columnsRL, int maxColumn) => BaseScreenContext.genScreenPTColumnsRL(columnsRL, maxColumn);
+  
+  @override
+  Rect? paintRect(String singlePT){
+    if(focusPageCurrentPT != null) return currentSizeRect;
+    return super.paintRect(singlePT);
   }
 }

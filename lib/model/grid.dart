@@ -1,6 +1,5 @@
 // ignore_for_file: constant_identifier_names
 
-import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:ketchup_ui/ketchup_ui.dart';
@@ -155,15 +154,15 @@ class GridContext extends BaseContext{
   List<List<RectGetter>> createRectGetterMatrix({bool reverseX = false, bool reverseY = false, 
                     // bool looseEqualIgnored = false, double xMinFactor = 0.00001, double yMinFactor = 0.00001,
                     bool Function(NamedLine later, NamedLine prev)? equalIgnoreCompare,
-                    List<String> includes = const [], List<String> excludes = const [], Size? sampleSortSize}){
+                    List<String> includes = const [], List<String> excludes = const [],required Size sampleSortSize}){
     var vLines = lines(DIRECTION.vertical, includes: includes, excludes: excludes);
-    if(sampleSortSize != null) vLines = useSampleWidthSorted(sampleSortSize, vLines);
-    ketchupDebug(
+    vLines = useSampleWidthSorted(sampleSortSize, vLines);
+    gridDebug(
       vLines = reverseX ? vLines.reversed.toList(): vLines
     );
     var hLines = lines(DIRECTION.horizontal, includes: includes, excludes: excludes);
-    if(sampleSortSize != null) hLines = useSampleHeightSorted(sampleSortSize, hLines);
-    ketchupDebug(
+    hLines = useSampleHeightSorted(sampleSortSize, hLines);
+    gridDebug(
       hLines = reverseY ? hLines.reversed.toList(): hLines
     );
     return createRectGetterMatrixFromLines(reverseX: reverseX, reverseY: reverseY, vLines: vLines, hLines: hLines, equalIgnoreCompare: equalIgnoreCompare );

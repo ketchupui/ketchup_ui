@@ -1,5 +1,5 @@
 import 'dart:math';
-import '../model/screen.dart';
+import '../model/screen/screen.dart';
 
 List<int> availableColumns(List<int> available, int maxColumn, [int minColumn = 1]){
   assert(available.isNotEmpty);
@@ -15,6 +15,6 @@ int? nextColumnMore(List<int> available, int nowColumn, int maxColumn){
 }
 
 List<(ScreenPT,T)> mergeScreenPT<T>(List<String> pts, String contextPT, List<T> list){
-  return list.indexed.map((indexed)=>((pts[indexed.$1], contextPT), indexed.$2)).toList();
+  return list.indexed.map<(ScreenPT,T)>((indexed)=>((pts[indexed.$1], contextPT), indexed.$2)).toList();
   // return pts.indexed.map((indexed)=>((indexed.$2, contextPT), list[indexed.$1])).toList();
 }

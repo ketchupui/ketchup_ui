@@ -13,20 +13,23 @@ typedef ResponsiveValueGroup = ({CATEGORY category, double fromExcludeSizeRatio,
 typedef ScreenHandset = ({RCPair rowColumn, Size? singleAspectRatio, TailColumnExpand tailColumnExpand});
 typedef HandsetValueGroup = ({ScreenContext screen, GridContext grid, LayerContext fgLayers, LayerContext bgLayers});
 typedef ResponseAdaptiveCallback = HandsetValueGroup? Function({required ResponsiveValueGroup matched, required Size size});
-typedef CaScreenWidgetsBuilderFilter<T> = T Function(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
-typedef ScreensBuilder = CaScreenWidgetsBuilderFilter<List<Widget>?>;
+typedef CaColumnWidgetsBuilderFilter<T> = T Function(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT);
+typedef ColumnsBuilder = CaColumnWidgetsBuilderFilter<List<Widget>?>;
 typedef WidgetsBuilder = List<Widget>? Function(BuildContext context);
-ScreensBuilder BlankWidgetsBuilder = (BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT)=>null;
+typedef WidgetsPairBuilder = ({List<Widget>? bg, List<Widget>? fg})? Function(BuildContext context);
+ColumnsBuilder BlankWidgetsBuilder = (BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT)=>null;
 
 class KetchupUIResponsive extends StatefulWidget{
   final List<ResponsiveValueGroup> responses;
   final Key? statefulKey;
   final HandsetValueGroup init;
   final ResponseAdaptiveCallback? callbackBeforeRender;
-  final ScreensBuilder? screensBuilder;
-  final WidgetsBuilder? fullscreenBackgroundBuilder;
+  final ColumnsBuilder columnsBuilder;
+  final WidgetsBuilder? bgFullBuilder;
+  final WidgetsBuilder? fgFullBuilder;
+  final VoidCallback measuredCb;
   final Decoration? bgDecoration;
-  const KetchupUIResponsive({super.key, this.bgDecoration, this.screensBuilder, this.fullscreenBackgroundBuilder, this.statefulKey, required this.responses, this.callbackBeforeRender, required this.init});
+  const KetchupUIResponsive({super.key, this.bgDecoration, required this.columnsBuilder, this.bgFullBuilder, this.fgFullBuilder, this.statefulKey, required this.responses, this.callbackBeforeRender, required this.init, required this.measuredCb});
   @override
   State<StatefulWidget> createState()=> _KetchupUIResponsiveState();
 }
@@ -44,8 +47,7 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive> with DebugUpd
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints){
-        stateDebug('layout-biggest:${constraints.biggest}');
-        // ketchupDebug('layout-smallest:${constraints.smallest}');
+        layoutDebug('KetchupUIResponsive-layout-biggest:${constraints.biggest}');
         if(widget.responses.isNotEmpty){
           for(ResponsiveValueGroup group in widget.responses){
             if(group.fromExcludeSizeRatio < constraints.biggest.aspectRatio && constraints.biggest.aspectRatio <= group.toIncludeSizeRatio){
@@ -53,13 +55,11 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive> with DebugUpd
                 lastResponse = group;
                 var cbResult = widget.callbackBeforeRender?.call(matched: group, size: constraints.biggest);
                 return KetchupUISized(key: widget.statefulKey,
-                    screensBuilder: widget.screensBuilder,
-                    fullscreenBackgroundBuilder: widget.fullscreenBackgroundBuilder,
-                    // rowColumn: cbResult?.rowColumn ?? widget.init.rowColumn, 
-                    // singleAspectRatio: cbResult != null ? cbResult.singleAspectRatio : group.singleAspectRatio, 
-                    // tailColumnExpand: cbResult?.tailColumnExpand ?? group.tailColumnExpand,
-                    size: constraints.biggest, 
-                    // mode: cbResult?.mode ?? widget.init.mode, 
+                    columnsBuilder: widget.columnsBuilder,
+                    bgFullBuilder: widget.bgFullBuilder,
+                    fgFullBuilder: widget.fgFullBuilder,
+                    measuredCb: widget.measuredCb,
+                    sizeRect: Offset.zero & constraints.biggest, 
                     screen: cbResult?.screen ?? widget.init.screen,
                     grid: cbResult?.grid ?? widget.init.grid,
                     fgLayers: cbResult?.fgLayers ?? widget.init.fgLayers,
@@ -72,13 +72,11 @@ class _KetchupUIResponsiveState extends State<KetchupUIResponsive> with DebugUpd
         }
         var init = widget.init;
         return KetchupUISized(key: widget.statefulKey, 
-          screensBuilder: widget.screensBuilder,
-          fullscreenBackgroundBuilder: widget.fullscreenBackgroundBuilder,
-          // rowColumn: init.rowColumn, 
-          // singleAspectRatio: init.singleAspectRatio, 
-          // tailColumnExpand: init.tailColumnExpand,
-          // mode: init.mode, 
-          size: constraints.biggest, 
+          columnsBuilder: widget.columnsBuilder,
+          fgFullBuilder: widget.fgFullBuilder,
+          bgFullBuilder: widget.bgFullBuilder,
+          measuredCb: widget.measuredCb,
+          sizeRect: Offset.zero & constraints.biggest, 
           screen: init.screen, 
           grid: init.grid, 
           fgLayers: init.fgLayers, 
@@ -101,10 +99,12 @@ class KetchupUILayout extends StatelessWidget{
   final LayerContext fgLayers;
   final LayerContext bgLayers;
   final Key? statefulKey;
-  final ScreensBuilder? screensBuilder;
-  final WidgetsBuilder? fullscreenBackgroundBuilder;
+  final ColumnsBuilder columnsBuilder;
+  final WidgetsBuilder? fgFullBuilder;
+  final WidgetsBuilder? bgFullBuilder;
+  final VoidCallback measuredCb;
   final Decoration? bgDecoration;
-  const KetchupUILayout({super.key, this.statefulKey, this.screensBuilder, this.fullscreenBackgroundBuilder,
+  const KetchupUILayout({super.key, this.statefulKey, required this.columnsBuilder, this.fgFullBuilder, this.bgFullBuilder, required this.measuredCb,
     // this.singleAspectRatio, 
     this.gapspan = 0, 
     required this.screen,
@@ -121,10 +121,12 @@ class KetchupUILayout extends StatelessWidget{
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: ((BuildContext context, BoxConstraints constraints){
-        ketchupDebug('KetchupUILayouer-layout-biggest:${constraints.biggest}');
-        // ketchupDebug('layout-smallest:${constraints.smallest}');
+        layoutDebug('KetchupUILayout-layout-biggest:${constraints.biggest}');
         return KetchupUISized(key: statefulKey,
-          screensBuilder: screensBuilder,
+          columnsBuilder: columnsBuilder,
+          bgFullBuilder: bgFullBuilder,
+          fgFullBuilder: fgFullBuilder,
+          measuredCb: measuredCb,
           screen: screen,
           grid: grid,
           fgLayers: fgLayers,
@@ -132,7 +134,7 @@ class KetchupUILayout extends StatelessWidget{
           bgDecoration: bgDecoration,
           // rowColumn: rowColumn, 
           // singleAspectRatio: singleAspectRatio, 
-          size: constraints.biggest, 
+          sizeRect: Offset.zero & constraints.biggest,
           // mode: mode, 
           // tailColumnExpand: tailColumnExpand,
         );
@@ -146,22 +148,26 @@ class KetchupUISized extends StatefulWidget{
   // final Size? singleAspectRatio;
   // final RCPair rowColumn;
   // final TailColumnExpand tailColumnExpand;
-  final Size size;
+  final Rect sizeRect;
   final double gapspan;
   // final RUNMODE mode;
   final ScreenContext screen;
   final GridContext grid;
   final LayerContext bgLayers;
   final LayerContext fgLayers;
-  final ScreensBuilder? screensBuilder;
-  final WidgetsBuilder? fullscreenBackgroundBuilder;
+  final ColumnsBuilder columnsBuilder;
+  final WidgetsBuilder? fgFullBuilder;
+  final WidgetsBuilder? bgFullBuilder;
   final Decoration? bgDecoration;
+  final VoidCallback measuredCb;
   const KetchupUISized({ super.key,
     // required this.rowColumn, 
     required this.screen,
-    required this.size, 
-    this.screensBuilder, 
-    this.fullscreenBackgroundBuilder,
+    required this.sizeRect, 
+    required this.columnsBuilder,
+    this.fgFullBuilder,
+    this.bgFullBuilder,
+    required this.measuredCb,
     // this.singleAspectRatio, 
     this.bgDecoration,
     // this.tailColumnExpand = TailColumnExpand.none,
@@ -184,13 +190,15 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
   LayerContext get bgLayers => widget.bgLayers;
   
   @override
-  Size get size => widget.size;
+  Size get size => widget.sizeRect.size;
 
   Size? get screenSingleAspectRatioSize => screen.singleAspectRatioSize;
   RCPair get screenRowColumn => screen.rowColumn;
   int get screenRow => screenRowColumn.row;
   int get screenColumn => screenRowColumn.column;
   TailColumnExpand get screenTailColumnExpand => screen.tailColumnExpand;
+
+  
 
   int renderTimes = 0;
 
@@ -260,7 +268,7 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
 
   Widget leafContainerWrapping({Key? key, Color? editModeColor, List<Widget>? children, required String leafName, Size? literalAspectRatio, String? extra, required BuildContext context}){
     // ketchupDebug('widgetsBuilder:${widget.widgetsBuilder}');
-    Size leafSize = screen.debug?.gKeyMappedValues[leafName]?.$2?.size ?? widget.size;
+    Size leafSize = screen.debug?.gKeyMappedValues[leafName]?.$2?.size ?? size;
     return editModeGridWrapping(singlePT: leafName, child: Container(
             key: key,
             width: double.infinity,
@@ -272,12 +280,18 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
             ),
             child: Stack(
               children: [
-                ... (stateDebug(widget.screensBuilder?.call(
-                    context, this,  (extra ?? leafName, screen.currentPattern))) ?? []),
-                Text('                ${leafSize.width.toStringAsFixed(2)}x${leafSize.height.toStringAsFixed(2)}(${leafSize.aspectRatio.toStringAsFixed(4)})', style: TextStyle(fontSize: vmin(2)(widget.size), color: Colors.white, backgroundColor: Colors.black)),
-                ...(screen.mode == RUNMODE.edit ? [
-                  AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style:TextStyle(color: editModeColor?.kDarken(0.8))),
-                ]:[])]
+                ... (){
+                      final screenPT = (extra ?? leafName, screen.currentPattern);
+                      final columnsBuild = widget.columnsBuilder(context, this, screenPT);
+                      buildDebug('#$hashCode-columnsBuild$screenPT-$columnsBuild');
+                      return columnsBuild ?? [];
+                    }(), 
+                // ... (buildDebug(widget.columnsBuilder(context, this, (extra ?? leafName, screen.currentPattern))) ?? []),
+                if(screen.mode == RUNMODE.debug)
+                Text('                ${leafSize.width.toStringAsFixed(2)}x${leafSize.height.toStringAsFixed(2)}(${leafSize.aspectRatio.toStringAsFixed(4)})', style: TextStyle(fontSize: vmin(2)(size), color: Colors.white, backgroundColor: Colors.black)),
+                if(screen.mode == RUNMODE.edit)
+                AutoSizeText( extra ?? leafName , presetFontSizes: [160, 570], maxLines: 2, style:TextStyle(color: editModeColor?.kDarken(0.8))),
+              ]
                 // ..addAll(
                 //   widget.mode != RUNMODE.runtime && screen.gKeyMappedValues.containsKey(leafName) ? 
                 //   [Column(
@@ -370,20 +384,27 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
       });
   }
   
-  bool get needUpdateMeasure => lastSize != size;
+  bool get needUpdateMeasure => lastSizeRect?.size != size;
+  
   void testNeedMeasure(){
     if((screen.debug?.isNeedMeasure ?? false) || needUpdateMeasure){
-      lazyUpdate((){
-        _updateGKeyValueRecords();
-        lastSize = size;
-      }, 'measured', screen.debug?.consumeMeasuredCb);
       
-      // WidgetsBinding.instance.addPostFrameCallback((Duration dt){
+      // measureUpdate((){
       //   _updateGKeyValueRecords();
-      //   lastSize = size;
-      //   /// 用于显示 measure 后的数据
-      //   setState((){});
-      // });
+      //   lastSizeRect = widget.sizeRect;
+      // }, 'measured', 
+      //   // screen.debug?.consumeMeasuredCb);
+      //   widget.measuredCb);
+      
+      WidgetsBinding.instance.addPostFrameCallback((Duration dt){
+        _updateGKeyValueRecords();
+        lastSizeRect = widget.sizeRect;
+        /// 用于显示 measure 后的数据(携带测量数据)
+        debugUpdate(() {
+          widget.measuredCb();
+        }, '$hashCode-cause-measure-update');
+        this.measureUpdateDebug('testNeedMeasure');
+      });
     }
   }
 
@@ -394,10 +415,8 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
       final renderBox = gKey.currentContext?.findRenderObject();
       if(renderBox != null){
         var rect = (renderBox as RenderBox).localToGlobal(Offset.zero) & renderBox.size;
-        ketchupDebug('$debugName:$rect');
         return MapEntry(debugName, ( gKey, rect));
       }else {
-        ketchupDebug('$debugName:null');
         return MapEntry(debugName, ( gKey, null));
       }});
   }
@@ -424,23 +443,23 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
   // }
 
   /// 确保所有语境都能收到回调
-  Size? lastSize;
+  Rect? lastSizeRect;
 
-  void initContext(){
-    screen.currentSize = size;
-    grid.currentSize = size;
-    fgLayers.currentSize = size;
-    bgLayers.currentSize = size;
+  void initSizeRect(){
+    screen.currentSizeRect = widget.sizeRect;
+    grid.currentSizeRect = widget.sizeRect;
+    fgLayers.currentSizeRect = widget.sizeRect;
+    bgLayers.currentSizeRect = widget.sizeRect;
   }
   
-  void setupContextListeners(){
-    if(lastSize != size){
-      screen.notifySizeChange(size, lastSize);
-      grid.notifySizeChange(size, lastSize);
-      fgLayers.notifySizeChange(size, lastSize);
-      bgLayers.notifySizeChange(size, lastSize);
+  void notifySizeRatioChange(){
+    if(lastSizeRect?.size != size){
+      screen.notifySizeChange(widget.sizeRect, lastSizeRect);
+      grid.notifySizeChange(widget.sizeRect, lastSizeRect);
+      fgLayers.notifySizeChange(widget.sizeRect, lastSizeRect);
+      bgLayers.notifySizeChange(widget.sizeRect, lastSizeRect);
       double newRatio = size.aspectRatio;
-      double? oldRatio = lastSize?.aspectRatio;
+      double? oldRatio = lastSizeRect?.size.aspectRatio;
       if(oldRatio != newRatio){
         screen.notifyRatioChange(size, newRatio, oldRatio);
         grid.notifyRatioChange(size, newRatio, oldRatio);
@@ -455,73 +474,55 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
     // KetchupCore core = Provider.of<KetchupCore>(context);
     // ketchupDebug('----------offset:---------');
     // ketchupDebug((context.findRenderObject() as RenderBox).localToGlobal(Offset.zero));
-    // return LayoutBuilder(
-    //   builder: ((BuildContext context, BoxConstraints constraints){
-    //     ketchupDebug('layout-biggest:${constraints.biggest}');
-    //     ketchupDebug('layout-smallest:${constraints.smallest}');
-    //     renderTimes = 0;
-    //     isNeedUpdateFlag = true;
-        stateDebug('update-build');
-        setupContextListeners();
+        this.updateBuildDebug('#$hashCode-build');
+        // notifySizeRatioChange();
         return 
-          // Container(
-          //   width: double.infinity,
-          //   height: double.infinity,
-          //   decoration: BoxDecoration(color: Colors.grey),
-          //   child: Column(
-          //     // mainAxisAlignment: MainAxisAlignment.center,
-          //     mainAxisAlignment: MainAxisAlignment.end,
-          //     crossAxisAlignment: CrossAxisAlignment.end,
-          //     children: []
-          //       ..addAll(widget.mode == RUNMODE.edit ? [
-          //           SizedBox(height: 20),
-          //           Container(
-          //             alignment: Alignment(1, 0.5),
-          //             decoration: BoxDecoration(color: Colors.red),
-          //             child: Text('$screenColumn个横向排列的 ${screenSingleAspectRatioSize?.width ?? '-'}:${screenSingleAspectRatioSize?.height ?? '-'} 比例容器', 
-          //               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          //             ),
-          //           ),
-          //           SizedBox(height: 20),
-          //         ]:[])
-          //       ..add(Expanded(
-          //         child: 
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    decoration: widget.bgDecoration ?? BoxDecoration(color: Colors.blueGrey), 
-                    child: fullscreenAspectRatioRow(
-                      fullScreenAspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
-                      child: 
-                      /// 根据 CHATGPT 建议修改(高效动画版)
-                        Stack(
-                          children: [
-                            ... (stateDebug(widget.fullscreenBackgroundBuilder?.call(
-                            context)) ?? []),
-                            CustomPaint(painter: LayerPainter(context: bgLayers, accessor: this), size: Size.infinite),
-                            Positioned.fill(child: (){
-                              testNeedMeasure();
-                              return screen.singleCurrentPT != null ? 
-                              leafContainerWrapping(leafName: screen.singleCurrentPT!, context: context) : 
-                              Row(children: screen.currentPatternNullable == PT_CELL ? 
-                                createSingleColumnCells(context: context, rowColumn: screenRowColumn, core: screen) :
-                                createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!));
-                            }()),
-                            CustomPaint(painter: LayerPainter(context: fgLayers, accessor: this), size: Size.infinite),
-                          ]
-                        )
-                        // CustomPaint(
-                        //   painter: LayerPainter(context: bgLayers, accessor: this),
-                        //   foregroundPainter: LayerPainter(context: fgLayers, accessor: this),
-                        //   child: Row(children: screen.currentPatternNullable == PT_CELL ? 
-                        //     createSingleColumnCells(context: context, rowColumn: widget.rowColumn, core: screen) :
-                        //     createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!)
-                        //   ),
-                        // )
-                      )
-                //     )
-                //   )
-                // ))
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: widget.bgDecoration ?? BoxDecoration(color: Colors.blueGrey), 
+            child: fullscreenAspectRatioRow(
+              fullScreenAspectRatio: screen.fullscreenAspectRatioSize?.aspectRatio,
+              child: 
+                /// 根据 CHATGPT 建议修改(高效动画版)
+                Stack(
+                  children: [
+                    ... (){
+                      final bgFull = widget.bgFullBuilder?.call(context);
+                      buildDebug('#$hashCode-bgFullBuild-$bgFull');
+                      return bgFull ?? [];
+                    }(), 
+                    // ... (this.buildDebug(w) ?? []),
+                    CustomPaint(painter: LayerPainter(context: bgLayers, accessor: this), size: Size.infinite),
+                    Positioned.fill(child: (){
+                      testNeedMeasure();
+                      return screen.focusPageCurrentPT != null ? 
+                      leafContainerWrapping(leafName: screen.focusPageCurrentPT!, context: context) : 
+                      Row(children: screen.currentPatternNullable == PT_CELL ? 
+                        createSingleColumnCells(context: context, rowColumn: screenRowColumn, core: screen) :
+                        createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!));
+                    }()),
+                    ... (){
+                      final fgFull = widget.fgFullBuilder?.call(context);
+                      buildDebug('#$hashCode-fgFullBuild-$fgFull');
+                      return fgFull ?? [];
+                    }(), 
+                    // ... (this.buildDebug(widget.fgFullBuilder?.call(context)) ?? []),
+                    CustomPaint(painter: LayerPainter(context: fgLayers, accessor: this), size: Size.infinite),
+                  ]
+                )
+                  // CustomPaint(
+                  //   painter: LayerPainter(context: bgLayers, accessor: this),
+                  //   foregroundPainter: LayerPainter(context: fgLayers, accessor: this),
+                  //   child: Row(children: screen.currentPatternNullable == PT_CELL ? 
+                  //     createSingleColumnCells(context: context, rowColumn: widget.rowColumn, core: screen) :
+                  //     createFromScreenContextPatterns(context: context, screenContextPattern: screen.currentPatternNullable!)
+                  //   ),
+                  // )
+                )
+          //     )
+          //   )
+          // ))
           );
       //   );}
       // ));
@@ -531,29 +532,34 @@ class KetchupUIState extends State<KetchupUISized> with DebugUpdater implements 
   
   @override
   void initState() {
+    stateLifecycleDebug('KetchupUIState#$hashCode-initState');
     super.initState();
-    ketchupDebug('KetchupUIState-initState:($hashCode)');
     renderTimes = 0;
-    // setupContextListeners();
-    initContext();
-    // 会影响第一次监听的输入
-    // lastSize = size;
-    
+    initSizeRect();
+  }
+
+  @override
+  void didUpdateWidget(covariant KetchupUISized oldWidget) {
+    stateLifecycleDebug('KetchupUIState#$hashCode-didUpdateWidget');
+    super.didUpdateWidget(oldWidget);
+    if(oldWidget.sizeRect != widget.sizeRect){
+      notifySizeRatioChange();
+    }
   }
 
   @override
   void dispose() {
+    stateLifecycleDebug('KetchupUIState#$hashCode-dispose');
     super.dispose();
-    ketchupDebug('dispose:$hashCode');
+    // ketchupDebug('dispose:$hashCode');
   }
   
-  @override
-  void lazyUpdate(VoidCallback c, [String? d, VoidCallback? afterUpdate]) {
+  void measureUpdate(VoidCallback c, [String? d, VoidCallback? afterMeasured]) {
     WidgetsBinding.instance.addPostFrameCallback((dt){
       debugUpdate(c, d);
       //// 实现 onMeasured 生命周期的关键
-      if(afterUpdate != null){
-        WidgetsBinding.instance.addPostFrameCallback((_)=>afterUpdate());
+      if(afterMeasured != null){
+        WidgetsBinding.instance.addPostFrameCallback((_)=>afterMeasured());
       }
     });
   }

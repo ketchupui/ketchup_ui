@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ketchup_ui/debug/console.dart';
 import 'package:ketchup_ui/ketchup_ui.dart';
-import 'package:ketchup_ui/nav/core.dart';
 import 'package:ketchup_ui/nav/route_finder.dart';
 
 void main(){
@@ -226,7 +225,7 @@ void main(){
   });
 
   group('Test Navigator Behaviors', (){
-    RouteHistoryNavigatorBuilderImpl navigaterBuilder = RouteHistoryNavigatorBuilderImpl(ca: EmptyContextAccessorImpl(ScreenContext(rowColumn: (row: 1, column: 5), singleAspectRatioSize: null)), contentPageClass: 3, routes: routes());
+    RouteHistoryNavigatorBuilderImpl navigaterBuilder = RouteHistoryNavigatorBuilderImpl(ca: EmptyCaImplTester(ScreenContext(rowColumn: (row: 1, column: 5), singleAspectRatioSize: null)), contentPageClass: 3, routes: routes());
     
     find(String name){
       return (TestableRoutePage? page){
@@ -244,7 +243,7 @@ void main(){
       navigaterBuilder.push('/collection/demos');
       navigaterBuilder.push('/collection/tags/good-multiplayer');
       navigaterBuilder.push('/collection/search/gta');
-      
+        
       expect(
         navigaterBuilder.findBuiltPage<TestableRoutePage>(find('(nav)-news-store-coll-ver-assets-kit')).toString(),'''(nav)-news-store-coll-ver-assets-kit created
 (nav)-news-store-coll-ver-assets-kit screenWillChange ((1-2-3-4-5), (1-2-3-4-5))

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:ketchup_ui/logger.dart';
 import 'model/grid.dart';
 
 extension ColorExtension on Color {
@@ -53,16 +54,16 @@ extension ColorExtension on Color {
 //   return object;
 // }
 
-T ketchupDebug<T>(T object, {String? prefix, String? suffix}){
-  if(kDebugMode){
-    if(prefix != null || suffix != null){
-      print('${prefix ?? ''}$object${suffix ?? ''}');
-    } else {
-      print('ketchupDebug:$object');
-    }
-  }
-  return object;
-}
+// T ketchupDebug<T>(T object, {String? prefix, String? suffix}){
+//   if(kDebugMode){
+//     if(prefix != null || suffix != null){
+//       print('${prefix ?? ''}$object${suffix ?? ''}');
+//     } else {
+//       print('ketchupDebug:$object');
+//     }
+//   }
+//   return object;
+// }
 
 // bool isGridInclude(String name, GridContext grid){
 //   List<String> includes = grid.includes;
@@ -70,6 +71,132 @@ T ketchupDebug<T>(T object, {String? prefix, String? suffix}){
 //   return includes.isEmpty && (excludes.isEmpty || excludes.isNotEmpty && !excludes.contains(name)) || 
 //     includes.isNotEmpty && includes.contains(name);
 // }
+
+P updateBuildDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.d([LogCategory.update, LogCategory.build], object.toString());
+  }
+  return object;
+}
+
+P updateGrid<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.d([LogCategory.update, LogCategory.grid], object.toString());
+  }
+  return object;
+}
+
+P updateDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.update, object.toString());
+  }
+  return object;
+}
+
+P layoutDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.layout, object.toString());
+  }
+  return object;
+}
+
+P buildDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.build, object.toString());
+  }
+  return object;
+}
+
+P stateLifecycleDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.d([LogCategory.state, LogCategory.lifecycle], object.toString());
+  }
+  return object;
+}
+
+P stateDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.state, object.toString());
+  }
+  return object;
+}
+
+P measureUpdateDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.d([LogCategory.measure, LogCategory.update], object.toString());
+  }
+  return object;
+}
+
+P measureDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.measure, object.toString());
+  }
+  return object;
+}
+
+P gridDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.grid, object.toString());
+  }
+  return object;
+}
+
+P uiDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.ui, object.toString());
+  }
+  return object;
+}
+
+P pageBuildDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.d([LogCategory.page, LogCategory.build], object.toString());
+  }
+  return object;
+}
+
+P pageLifecycleDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.d([LogCategory.page, LogCategory.lifecycle], object.toString());
+  }
+  return object;
+}
+
+P navPageDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.d([LogCategory.nav, LogCategory.page], object.toString());
+  }
+  return object;
+}
+
+P navDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.nav, object.toString());
+  }
+  return object;
+}
+
+P pageDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.page, object.toString());
+  }
+  return object;
+}
+
+P lifecycleDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.lifecycle, object.toString());
+  }
+  return object;
+}
+
+P screenDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.screen, object.toString());
+  }
+  return object;
+}
 
 bool isGridInclude(String name, GridContext grid){
   return !isGridExclude(name, grid);

@@ -18,13 +18,13 @@ class DebugToolContext extends BaseContext {
   bool get isNeedMeasure => gKeyMappedValues.isEmpty;
   bool get measured => gKeyMappedValues.isNotEmpty;
 
-  final List<VoidCallback> _measuredCbs = [];
-  void produceMeasuredCb(VoidCallback measuredCb){
-    _measuredCbs.add(measuredCb);
-  }
-  VoidCallback? get consumeMeasuredCb => _measuredCbs.isEmpty ? null : (){
-    while(_measuredCbs.isNotEmpty){
-      _measuredCbs.removeLast()();
-    }
-  };
+  // final List<VoidCallback> _measuredCbs = [];
+  // void produceMeasuredCb(VoidCallback measuredCb){
+  //   _measuredCbs.add(measuredCb);
+  // }
+  // VoidCallback? get consumeMeasuredCb => _measuredCbs.isEmpty ? null : (){
+  //   while(_measuredCbs.isNotEmpty){
+  //     _measuredCbs.removeLast()();
+  //   }
+  // };
 }

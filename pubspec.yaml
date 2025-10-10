@@ -16,6 +16,8 @@ dependencies:
   flutter:
     sdk: flutter
   collection: ^1.19.0
+  mockito: ^5.5.1
+  web_socket_channel: ^3.0.3
 
 
 dev_dependencies:
