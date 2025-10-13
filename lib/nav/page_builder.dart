@@ -15,9 +15,9 @@ class SimpleNavigatorPageBuilder extends NavigatorPage {
   final WidgetsBuilder? bgBuilder;
   final ColumnsBuilder? columnsBuilder;
 
-  SimpleNavigatorPageBuilder({required this.availableColumns, this.bgBuilder, this.fgBuilder, this.columnsBuilder});
+  SimpleNavigatorPageBuilder({required this.availableColumns, required this.focusUpdate, this.bgBuilder, this.fgBuilder, this.columnsBuilder});
 
-  factory SimpleNavigatorPageBuilder.maxPageLevel(int maxPageLevel, ColumnsBuilder columnsBuilder)=>SimpleNavigatorPageBuilder(availableColumns: List.generate(maxPageLevel, (col)=>col), columnsBuilder: columnsBuilder);
+  factory SimpleNavigatorPageBuilder.maxPageLevel(int maxPageLevel, ColumnsBuilder columnsBuilder, {required void Function(VoidCallback p1, [String? d]) focusUpdate})=>SimpleNavigatorPageBuilder(availableColumns: List.generate(maxPageLevel, (col)=>col), columnsBuilder: columnsBuilder, focusUpdate: focusUpdate);
   
   @override
   void onDestroy() {
@@ -70,6 +70,15 @@ class SimpleNavigatorPageBuilder extends NavigatorPage {
   List<Widget>? fgFullBuild(BuildContext context) {
     return fgFullBuild(context);
   }
+  
+  @override
+  List<FocusManager>? findFocusManager(FindFocusPosition position) => null;
+  
+  @override
+  void Function(VoidCallback p1, [String? d]) focusUpdate;
+
+  @override
+  ScreenContext? pageScreen;
   
 }
 
@@ -185,6 +194,15 @@ class TestableRoutePage extends NavigatorPage with vConsole{
   List<Widget>? fgFullBuild(BuildContext context) {
     return null;
   }
+  
+  @override
+  List<FocusManager>? findFocusManager(FindFocusPosition position) => null;
+  
+  @override
+  void Function(VoidCallback p1, [String? d]) get focusUpdate => (VoidCallback p1, [String? d]){};
+
+  @override
+  ScreenContext? pageScreen;
   
 }
 

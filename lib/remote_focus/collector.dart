@@ -1,5 +1,4 @@
 import 'dart:ui';
-import '../model/accessor.dart';
 import 'focus.dart';
 import 'debouncer.dart';
 import 'remote.dart';
@@ -61,7 +60,7 @@ mixin ResponsivePointCollector {
   }
 }
 
-mixin SingleRemoteChannelRPC on ResponsivePointCollector implements RemoteChannel, ContextAccessorUpdate{
+mixin SingleRemoteChannelRPC on ResponsivePointCollector implements RemoteChannel{
 
   String get channelName;
 
@@ -79,28 +78,41 @@ mixin SingleRemoteChannelRPC on ResponsivePointCollector implements RemoteChanne
         ()=>remoteChannelSend(channelName, collectResponsivePointNames, (name){
           switch(name){
             case 'left':
-              if(focusHandler.leftFocusNode != null) focusHandler.focusLeft();
-              update((){});
+              focusHandler.focusLeftAcrossManager();
               break;
             case 'right':
-              if(focusHandler.rightFocusNode != null) focusHandler.focusRight();
-              update((){});
+              focusHandler.focusRightAcrossManager();
               break;
             case 'up':
-              if(focusHandler.upFocusNode != null) focusHandler.focusUp();
-              update((){});
+              focusHandler.focusUpAcrossManager();
               break;
             case 'down':
-              if(focusHandler.downFocusNode != null) focusHandler.focusDown();
-              update((){});
+              focusHandler.focusDownAcrossManager();
               break;
             case 'ok':
-              final focusName = focusHandler.currentFocusNode.name;
-              nameResponse(focusName)?.call();
+            case 'enter':
+              if(focusHandler.focusEnter() == null){
+                final focusName = focusHandler.currentFocusNode.name;
+                if(focusHandler is ResponsivePointCollector){
+                  ///  需要保证 Collector 和 Focus 记录的 name 值一致
+                  (focusHandler as ResponsivePointCollector).nameResponse(focusName)?.call();
+                }else{
+                  nameResponse(focusName)?.call();
+                }
+              }
               break;
             case 'menu':
             case 'config':
+              focusHandler.focusTopFatherManager();
+              break;
             case 'back':
+              final namedCb = focusHandler is ResponsivePointCollector ? (focusHandler as ResponsivePointCollector).nameResponse(name) : nameResponse(name);
+              if(namedCb != null){
+                namedCb.call();
+              }else{
+                focusHandler.focusBackAcrossManager();
+              }
+              break;
             default:
               nameResponse(name.toString())?.call();
           }

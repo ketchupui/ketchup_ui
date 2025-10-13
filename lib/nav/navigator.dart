@@ -257,10 +257,10 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
 
     final Map<String, VScreenFocusPageManager> vscreenMap = {};
     _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
-      if(cache.page is VScreenKetchupRoutePage){
-        final cachePage = cache.page as VScreenKetchupRoutePage;
-        if(cachePage.virtualScreen != null){
-          vscreenMap.update(newPT.$1, (_) => cachePage.virtualScreen as VScreenFocusPageManager, ifAbsent: () => cachePage.virtualScreen as VScreenFocusPageManager,);
+      if(cache.page is VScreenFocusRoutePage){
+        final cachePage = cache.page as VScreenFocusRoutePage;
+        if(cachePage.pageScreen != null){
+          vscreenMap.update(newPT.$1, (_) => cachePage.pageScreen as VScreenFocusPageManager, ifAbsent: () => cachePage.pageScreen as VScreenFocusPageManager,);
         }
       }
     });

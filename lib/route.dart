@@ -32,6 +32,7 @@ abstract class PageLifeCycle{
 /// 带有生命周期的页面
 abstract mixin class FocusRoutePage implements MultiColumns, PageLifeCycle, FocusManager{
   // void onStateInit(void Function(VoidCallback c, [String? d]) stateUpdater);
+  ScreenContext? get pageScreen;
 
   @override
   AnimationController willPlayAnimated({ScreenPT? fromPT, required ScreenPT toPT, required AnimationController animCtrl}) {

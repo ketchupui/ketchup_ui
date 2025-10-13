@@ -7,7 +7,7 @@ abstract mixin class HasNavVirtualScreen {
   ScreenPT get screenPT;
   VirtualScreenNavigatorBuilder get pageNav;
   ScreenContext get virtualScreen;
-  VScreenKetchupRoutePage get page;
+  VScreenFocusRoutePage get page;
 }
 
 abstract class PaintRectInterface {
@@ -18,13 +18,14 @@ abstract class PaintRectInterface {
 
 abstract class PaintRectFocusRoutePage extends FocusRoutePage with MultiColumns, FocusManager implements PaintRectInterface {
 
-  ScreenContext get screen;
-  
+  @override
+  ScreenContext? get pageScreen;
+
   @override
   ScreenPT? screenPT;
 
   @override
-  Rect? get paintRect => screenPT != null ? screen.paintRect(screenPT!.$1) : null;
+  Rect? get paintRect => screenPT != null ? pageScreen?.paintRect(screenPT!.$1) : null;
   
   // @override
   // Rect? get paintRect => screen.currentSizeRect;
@@ -51,9 +52,10 @@ abstract class PaintRectFocusRoutePage extends FocusRoutePage with MultiColumns,
       ... fgFullBuild(context) ?? [],
     ];
   }
+
 }
 
-abstract class VScreenKetchupRoutePage extends FocusRoutePage with MultiColumns, FocusManager implements PaintRectInterface{
+abstract class VScreenFocusRoutePage extends FocusRoutePage with MultiColumns, FocusManager implements PaintRectInterface{
 
   ContextAccessor get ca;
   int get contentPageClass;
@@ -62,15 +64,16 @@ abstract class VScreenKetchupRoutePage extends FocusRoutePage with MultiColumns,
   ScreenPT? screenPT;
 
   @override
-  Rect? get paintRect => virtualScreen?.currentSizeRect;
-  
+  Rect? get paintRect => pageScreen?.currentSizeRect;
+
+  @override
+  ScreenContext? pageScreen;
   GlobalKey vscreenKey = GlobalKey();
   GlobalKey innerKetchupKey = GlobalKey();
-  VScreenRoutePageState? get vscreenState => vscreenKey.currentState as VScreenRoutePageState?;
+  VScreenPageState? get vscreenState => vscreenKey.currentState as VScreenPageState?;
   KetchupUIState? get ketchupState => innerKetchupKey.currentState as KetchupUIState?;
   VirtualScreenNavigatorBuilder? get pageNav => vscreenState?.pageNav;
   void Function(VoidCallback fn, [String? d])? get pageUpdate => ketchupState?.update;
-  ScreenContext? virtualScreen;
 
   @override
   @mustCallSuper
@@ -85,8 +88,8 @@ abstract class VScreenKetchupRoutePage extends FocusRoutePage with MultiColumns,
   void onScreenWillChange(ScreenPT willChangePT) {
     pageLifecycleDebug('VScreenKetchupRoutePage#$hashCode-onScreenWillChange');
     screenPT = willChangePT;
-    if(virtualScreen != null) virtualScreen!.dispose();
-    virtualScreen = ca.screen.createVirtual(willChangePT.$1, createVirtualScreenUseParams(willChangePT));
+    if(pageScreen != null) pageScreen!.dispose();
+    pageScreen = ca.screen.createVirtual(willChangePT.$1, createVirtualScreenUseParams(willChangePT));
     // pageNav?.adjustScreenColumnChangeWait();
   }
 
@@ -94,17 +97,19 @@ abstract class VScreenKetchupRoutePage extends FocusRoutePage with MultiColumns,
   @mustCallSuper
   List<Widget>? columnsBuild(BuildContext context, ContextAccessor ctxAccessor, ScreenPT screenPT) {
     pageBuildDebug('VScreenKetchupRoutePage#$hashCode-columnsBuild');
-    if(virtualScreen == null) {
+    if(pageScreen == null) {
       return [
         ... bgFullBuild(context) ?? [],
         ... fgFullBuild(context) ?? [],
       ];
     }
     return [
-      VScreenRoutePageStatefulWidget(key: vscreenKey, virtualScreen: virtualScreen!, statefulKey: innerKetchupKey, page: this, ca: ca, contentPageClass: contentPageClass, screenPT: screenPT)
+      VScreenPageStatefulWidget(key: vscreenKey, virtualScreen: pageScreen!, statefulKey: innerKetchupKey, page: this, ca: ca, contentPageClass: contentPageClass, screenPT: screenPT)
     ];
   }
-  
+
+  @override
+  void Function(VoidCallback, [String? d]) get focusUpdate => pageUpdate ?? ca.update;
   NavCtntPair<PageCache>? pageNavSavedData;
   
   @override
@@ -112,25 +117,26 @@ abstract class VScreenKetchupRoutePage extends FocusRoutePage with MultiColumns,
   void onPause() {
     pageLifecycleDebug('VScreenKetchupRoutePage#$hashCode-onPause');
   }
+
 }
 
-class VScreenRoutePageStatefulWidget extends StatefulWidget{
+class VScreenPageStatefulWidget extends StatefulWidget{
   
   ScreenPT screenPT;
   ContextAccessor ca;
   ScreenContext virtualScreen; 
-  VScreenKetchupRoutePage page;
+  VScreenFocusRoutePage page;
   int contentPageClass;
   Map<String, String>? receiveData;
   Key? statefulKey;
-  VScreenRoutePageStatefulWidget({super.key, this.statefulKey, required this.virtualScreen, required this.page, required this.ca, required this.contentPageClass, this.receiveData, required this.screenPT});
+  VScreenPageStatefulWidget({super.key, this.statefulKey, required this.virtualScreen, required this.page, required this.ca, required this.contentPageClass, this.receiveData, required this.screenPT});
 
   @override
   // ignore: no_logic_in_create_state
-  State<StatefulWidget> createState() => VScreenRoutePageState();
+  State<StatefulWidget> createState() => VScreenPageState();
 }
 
-class VScreenRoutePageState<T extends VScreenRoutePageStatefulWidget> extends State<T> with DebugUpdater implements HasNavVirtualScreen{
+class VScreenPageState<T extends VScreenPageStatefulWidget> extends State<T> with DebugUpdater implements HasNavVirtualScreen{
 
   @override
   late VirtualScreenNavigatorBuilder pageNav;
@@ -139,7 +145,7 @@ class VScreenRoutePageState<T extends VScreenRoutePageStatefulWidget> extends St
   ScreenContext get virtualScreen => widget.virtualScreen;
 
   @override
-  VScreenKetchupRoutePage get page => widget.page;
+  VScreenFocusRoutePage get page => widget.page;
   
   bool createPageNav(){
     final savedData = widget.page.pageNavSavedData;

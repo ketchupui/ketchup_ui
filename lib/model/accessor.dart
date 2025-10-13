@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:ketchup_ui/ketchup_ui.dart';
 
 import 'grid.dart';
 import 'layer.dart';
@@ -11,6 +12,7 @@ abstract class ContextAccessorUpdate{
 /// 语境访问器
 abstract class ContextAccessor implements ContextAccessorUpdate{
   ScreenContext get screen;
+  // BasicNavigatorBuilder? get nav;
   GridContext get grid;
   LayerContext get fgLayers;
   LayerContext get bgLayers;
