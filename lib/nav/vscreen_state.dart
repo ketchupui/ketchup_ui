@@ -1,3 +1,5 @@
+// ignore_for_file: must_be_immutable
+
 import 'package:flutter/widgets.dart' hide FocusManager;
 import 'package:ketchup_ui/ketchup_ui.dart';
 import '../remote_focus/focus.dart';
