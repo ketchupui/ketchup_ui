@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:ketchup_ui/utils.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef VoidRemoteCallback = void Function(dynamic);
@@ -45,12 +46,12 @@ mixin RemoteChannel {
   }
 
   void remoteBroadcastUnknownChannel(RemoteChannelObject data){
-    print('remoteBroadcastUnknownChannel:$data');
+    remoteDebug('remoteBroadcastUnknownChannel:$data');
   }
   
   void remoteChannelSend(String channel, dynamic object, CloseRemoteCallback callback){
     channelMap[channel] = (data){
-      print('onChannelData:$channel:$data');
+      remoteDebug('onChannelData:$channel:$data');
       if(callback(data)) channelMap.remove(channel);
     };
     remoteChannel?.sink.add(jsonEncode(packRCOIntoJson(channel, object)));

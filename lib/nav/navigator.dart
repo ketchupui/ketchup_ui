@@ -139,7 +139,7 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
     final ctnList = intentsRL.mapIndexed<Navigatable<PageCache>>((index, intent)=>(contentPageClass, intent.column,PageCache.nopathPage(intent.page..onReceive(intent.recieveParams)))).toList().reversed.toList();
     __currentPair = expandCollapse((navList, ctnList), screenColumn)!;
     for(final cache in currentCachePages){
-      cache.page!.onCreate();
+      cache.page.onCreate();
     }
     _pageReceivedWillChangePT(null, 'indexedIntents', animCtrl, callUpdate);
   }
@@ -160,16 +160,16 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
     for(final page in pages){
       __currentPair.$1.removeWhere((cached){
         if(cached.$3.page == page){
-          cached.$3.page?.onPause();
-          cached.$3.page?.onDestroy();
+          cached.$3.page.onPause();
+          cached.$3.page.onDestroy();
           return true;
         }
         return false;
       });
       __currentPair.$2.removeWhere((cached){
         if(cached.$3.page == page){
-          cached.$3.page?.onPause();
-          cached.$3.page?.onDestroy();
+          cached.$3.page.onPause();
+          cached.$3.page.onDestroy();
           return true;
         }
         return false;
@@ -346,7 +346,7 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
     if(currentScreenPTs != null){
       for(var cScreenPT in currentScreenPTs!.indexed){
         if((cScreenPT.$2, currentContextPT).toString() == screenPT.toString() && cScreenPT.$1 < currentCachePages.length){
-          return currentCachePages[cScreenPT.$1].page?.columnsBuild(context, ctxAccessor, screenPT);
+          return currentCachePages[cScreenPT.$1].page.columnsBuild(context, ctxAccessor, screenPT);
         }
       }
       return null;
@@ -401,7 +401,7 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
 
   void cachePagesUnload(){
     for (var cache in __cachePathPages.values) {
-      cache.page?.onDestroy();
+      cache.page.onDestroy();
     }
   }
 
@@ -486,8 +486,8 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
     }else{
       __currentPair.$1.remove(removed);
     }
-    removed!.$3.page?.onPause();
-    removed.$3.page?.onDestroy();
+    removed!.$3.page.onPause();
+    removed.$3.page.onDestroy();
     _pageReceivedWillChangePT(route, 'pop', animCtrl, callUpdate);
   }
 
@@ -522,7 +522,7 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
         cachePage = PageCache.pathPage(path, route.ketchupPageBuilder!());
       }
       _pageReadyWillReceive(cachePage,
-        cachePage.page!, path, { ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() }, pageClass, targetColumn, isFromCache, debugInfo: debugInfo, animCtrl: animCtrl, callUpdate: callUpdate);
+        cachePage.page, path, { ...param, '_pageClass': pageClass.toString(), '_fromCache': isFromCache.toString() }, pageClass, targetColumn, isFromCache, debugInfo: debugInfo, animCtrl: animCtrl, callUpdate: callUpdate);
     }
   }
 
@@ -710,7 +710,7 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
     WidgetsBinding.instance.addPostFrameCallback((Duration dt){
       WidgetsBinding.instance.addPostFrameCallback((Duration dt){
         for (var cache in currentCachePages) {
-          cache.page?.onMeasured(screen);
+          cache.page.onMeasured(screen);
         }
       });
     });
@@ -730,7 +730,7 @@ abstract class RouteHistoryNavigatorBuilder extends BasicNavigatorBuilder with R
     if(currentScreenPTs != null){
       for(var cScreenPT in currentScreenPTs!.indexed){
         if((cScreenPT.$2, currentContextPT).toString() == screenPT.toString() && cScreenPT.$1 < currentCachePages.length){
-          return currentCachePages[cScreenPT.$1].page?.columnsBuild(context, ctxAccessor, screenPT);
+          return currentCachePages[cScreenPT.$1].page.columnsBuild(context, ctxAccessor, screenPT);
         }
       }
       return null;

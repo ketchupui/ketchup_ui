@@ -121,6 +121,13 @@ P stateDebug<P>(P object){
   return object;
 }
 
+P remoteDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.remote, object.toString());
+  }
+  return object;
+}
+
 P measureUpdateDebug<P>(P object){
   if(kDebugMode){
     CategoryLogger.d([LogCategory.measure, LogCategory.update], object.toString());

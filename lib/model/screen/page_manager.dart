@@ -1,6 +1,4 @@
 
-import 'dart:developer';
-
 import 'package:ketchup_ui/model/debugtool.dart';
 import 'package:ketchup_ui/model/screen/screen.dart';
 

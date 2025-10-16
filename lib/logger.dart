@@ -20,6 +20,7 @@ enum LogCategory {
   nav('NAV', LogLevel.debug),
   page('PAGE', LogLevel.debug),
   focus('FOCUS', LogLevel.debug),
+  remote('REMOTE', LogLevel.debug),
   
   /// others
   network('NETWORK', LogLevel.debug),
@@ -47,11 +48,11 @@ class CategoryLogger {
   static LogLevel _globalLevel = kReleaseMode ? LogLevel.warning : LogLevel.verbose;
   
   // 便捷的分类组
-  static final List<LogCategory> _allCategories = LogCategory.values.toList();
-  static final List<LogCategory> _uiCategories = [LogCategory.ui, LogCategory.business];
-  static final List<LogCategory> _dataCategories = [LogCategory.network, LogCategory.database, LogCategory.storage];
-  static final List<LogCategory> _debugCategories = [LogCategory.network, LogCategory.database, LogCategory.performance];
-  static final List<LogCategory> _errorCategories = [LogCategory.crash, LogCategory.network, LogCategory.database];
+  // static final List<LogCategory> _allCategories = LogCategory.values.toList();
+  // static final List<LogCategory> _uiCategories = [LogCategory.ui, LogCategory.business];
+  // static final List<LogCategory> _dataCategories = [LogCategory.network, LogCategory.database, LogCategory.storage];
+  // static final List<LogCategory> _debugCategories = [LogCategory.network, LogCategory.database, LogCategory.performance];
+  // static final List<LogCategory> _errorCategories = [LogCategory.crash, LogCategory.network, LogCategory.database];
   
   // 设置全局级别
   static set globalLevel(LogLevel level) => _globalLevel = level;

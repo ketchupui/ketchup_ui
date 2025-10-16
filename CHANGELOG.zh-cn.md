@@ -1,4 +1,4 @@
-## 1.0.0
+## 1.0.0-dev.1
 
 * feat: 最高支持七联屏(5->7)
 * feat: 尾屏适配模式(TailColumnExpand.left｜right｜none)

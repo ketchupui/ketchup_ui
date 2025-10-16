@@ -1,4 +1,4 @@
-## 1.0.0
+## 1.0.0-dev.1
 
 * feat: Maximum screen support increased from 5 to 7
 * feat: Tail column expansion mode (TailColumnExpand.left | right | none)
