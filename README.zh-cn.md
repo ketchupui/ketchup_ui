@@ -17,12 +17,11 @@
 - (业务) 为休闲游戏而生，搭配 `flutter_map` 和 `flutter_flame` 库开发基于大地图的多人分屏游戏
 - (设备) TV优先，一次性设计为大屏和移动设备的页面元素，多屏模式为 macos、windows、linux 进行大屏内容部署，单屏模式为 android、ios 进行移动控制端部署
 
-
 ## 路线图
 
 - 1.1.0 支持 代码库管理｜选项和下载 以及 DEMO演示 📅
 - 1.0.x 完善 launcher 1.0 演示后续功能 📅
-- 1.0.0 能够完整支持 launcher 1.0 演示功能发布 [1.0版本说明文档](/CHANGELOG.zh-cn.md)  ✅
+- 1.0.0 能够完整支持 launcher 1.0 演示功能发布 [1.0版本说明文档](/CHINESE_CHANGELOG.md)  ✅
 - 0.x.x 对 game-kit 和 assets-kit 的版本更新支持(下沉组件或类型声明) ✅
 - 0.2.x (非运行时)交互模式切换 TV<->键鼠<->触控 ✅
 - 0.1.x 页面导航器支持动画转场 ✅
