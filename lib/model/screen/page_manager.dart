@@ -1,4 +1,6 @@
 
+import 'dart:developer';
+
 import 'package:ketchup_ui/model/debugtool.dart';
 import 'package:ketchup_ui/model/screen/screen.dart';
 
@@ -47,26 +49,26 @@ mixin FocusPageManager on BaseScreenContext{
   int get focusPageNextIndex => switch(focusPageMode){
     FocusPageMode.singleRL => _currentFocusIndex - 1  >= 0 && _currentFocusIndex < singles.length ? _currentFocusIndex - 1 : -1,
     FocusPageMode.singleLR => _currentFocusIndex + 1 < singles.length ? _currentFocusIndex + 1 : -1,
-    FocusPageMode.multiLR => _currentFocusIndex + 1 < singles.length ? _currentFocusIndex + 1 : -1,
-    // FocusPageMode.multiLR => -1,
+    // FocusPageMode.multiLR => _currentFocusIndex + 1 < singles.length ? _currentFocusIndex + 1 : -1,
+    FocusPageMode.multiLR => -1,
   };
   String? get focusPageNextPT => switch(focusPageMode){
     FocusPageMode.singleRL => _currentFocusIndex - 1  >= 0 && _currentFocusIndex < singles.length ? singles[_currentFocusIndex - 1] : null,
     FocusPageMode.singleLR => _currentFocusIndex + 1 < singles.length ? singles[_currentFocusIndex + 1] : null,
-    FocusPageMode.multiLR => _currentFocusIndex + 1 < singles.length ? singles[_currentFocusIndex + 1] : null,
-    // FocusPageMode.multiLR => null,
+    // FocusPageMode.multiLR => _currentFocusIndex + 1 < singles.length ? singles[_currentFocusIndex + 1] : null,
+    FocusPageMode.multiLR => null,
   };
   int get focusPagePrevIndex => switch(focusPageMode){
     FocusPageMode.singleRL => _currentFocusIndex + 1 < singles.length ? _currentFocusIndex + 1 : -1,
     FocusPageMode.singleLR => _currentFocusIndex - 1  >= 0 && _currentFocusIndex < singles.length ? _currentFocusIndex - 1 : -1,
-    FocusPageMode.multiLR => _currentFocusIndex - 1  >= 0 && _currentFocusIndex < singles.length ? _currentFocusIndex - 1 : -1,
-    // FocusPageMode.multiLR => -1,
+    // FocusPageMode.multiLR => _currentFocusIndex - 1  >= 0 && _currentFocusIndex < singles.length ? _currentFocusIndex - 1 : -1,
+    FocusPageMode.multiLR => -1,
   };
   String? get focusPagePrevPT => switch(focusPageMode){
     FocusPageMode.singleRL => _currentFocusIndex + 1 < singles.length ? singles[_currentFocusIndex + 1] : null,
     FocusPageMode.singleLR => _currentFocusIndex - 1  >= 0 && _currentFocusIndex < singles.length ? singles[_currentFocusIndex - 1] : null,
-    FocusPageMode.multiLR => _currentFocusIndex - 1  >= 0 && _currentFocusIndex < singles.length ? singles[_currentFocusIndex - 1] : null,
-    // FocusPageMode.multiLR => null,
+    // FocusPageMode.multiLR => _currentFocusIndex - 1  >= 0 && _currentFocusIndex < singles.length ? singles[_currentFocusIndex - 1] : null,
+    FocusPageMode.multiLR => null,
   };
 
 }
@@ -78,8 +80,16 @@ mixin VScreenFocusPageManager on FocusPageManager{
     super.mode = runmode;
     currentPatternVirtualMap?.values.forEach((vscreen)=>vscreen.mode = runmode);
   }
-
-  Map<String, VScreenFocusPageManager>? currentPatternVirtualMap;
+  Map<String, VScreenFocusPageManager>? _currentPatternVirtualMap;
+  
+  Map<String, VScreenFocusPageManager>? get currentPatternVirtualMap => _currentPatternVirtualMap;
+  set currentPatternVirtualMap(Map<String, VScreenFocusPageManager>? map){
+    // if(map?.isEmpty ?? true){
+    //   debugger();
+    // }
+    _currentPatternVirtualMap = map;
+  }
+  
   VScreenFocusPageManager? findVirtualScreen(String singlePT){
     return currentPatternVirtualMap?[singlePT];
   }

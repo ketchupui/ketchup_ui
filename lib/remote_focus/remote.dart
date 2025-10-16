@@ -23,7 +23,7 @@ mixin RemoteChannel {
   
   RemoteChannelObject packRCOIntoJson(String channel, dynamic object,);
 
-  void remoteChannelListen(void Function(String) onInitData,{
+  void remoteChannelListen(void Function(String) onInitData, {
     Function? onError,
     void Function()? onDone,
     bool? cancelOnError,

@@ -69,6 +69,55 @@ mixin SingleRemoteChannelRPC on ResponsivePointCollector implements RemoteChanne
   FocusManager get focusHandler;
 
   @override
+  /// 连接存在 但是不在 build 流程中 callback
+  void remoteBroadcastUnknownChannel(RemoteChannelObject data){
+    responseCallback(data.object);
+  }
+
+  void responseCallback(dynamic name){
+    switch(name){
+      case 'left':
+        focusHandler.focusNextAcrossManager(action: NextFocusAction.left);
+        break;
+      case 'right':
+        focusHandler.focusNextAcrossManager(action: NextFocusAction.right);
+        break;
+      case 'up':
+        focusHandler.focusNextAcrossManager(action: NextFocusAction.up);
+        break;
+      case 'down':
+        focusHandler.focusNextAcrossManager(action: NextFocusAction.down);
+        break;
+      case 'ok':
+      case 'enter':
+        if(focusHandler.focusNext(action: NextFocusAction.enter) == null){
+          final focusName = focusHandler.currentFocusNode.name;
+          if(focusHandler is ResponsivePointCollector){
+            ///  需要保证 Collector 和 Focus 记录的 name 值一致
+            (focusHandler as ResponsivePointCollector).nameResponse(focusName)?.call();
+          }else{
+            nameResponse(focusName)?.call();
+          }
+        }
+        break;
+      case 'menu':
+      case 'config':
+        focusHandler.focusNextAcrossManager(positions: [FindFocusPosition.topFather]);
+        break;
+      case 'back':
+        final namedCb = focusHandler is ResponsivePointCollector ? (focusHandler as ResponsivePointCollector).nameResponse(name) : nameResponse(name);
+        if(namedCb != null){
+          namedCb.call();
+        }else{
+          focusHandler.focusNextAcrossManager(action: NextFocusAction.back);
+        }
+        break;
+      default:
+        nameResponse(name.toString())?.call();
+    }
+  }
+  
+  @override
   /// 把交互点包裹起来做一层远程调用
   VoidCallback collectPoint(VoidCallback? callback, {String? name, VoidCallback? after, VoidCallback? before}){
     super.collectPoint(callback, name: name, after: after, before: before);
@@ -76,46 +125,7 @@ mixin SingleRemoteChannelRPC on ResponsivePointCollector implements RemoteChanne
       debouncer.call(
         /// 远程交互
         ()=>remoteChannelSend(channelName, collectResponsivePointNames, (name){
-          switch(name){
-            case 'left':
-              focusHandler.focusLeftAcrossManager();
-              break;
-            case 'right':
-              focusHandler.focusRightAcrossManager();
-              break;
-            case 'up':
-              focusHandler.focusUpAcrossManager();
-              break;
-            case 'down':
-              focusHandler.focusDownAcrossManager();
-              break;
-            case 'ok':
-            case 'enter':
-              if(focusHandler.focusEnter() == null){
-                final focusName = focusHandler.currentFocusNode.name;
-                if(focusHandler is ResponsivePointCollector){
-                  ///  需要保证 Collector 和 Focus 记录的 name 值一致
-                  (focusHandler as ResponsivePointCollector).nameResponse(focusName)?.call();
-                }else{
-                  nameResponse(focusName)?.call();
-                }
-              }
-              break;
-            case 'menu':
-            case 'config':
-              focusHandler.focusTopFatherManager();
-              break;
-            case 'back':
-              final namedCb = focusHandler is ResponsivePointCollector ? (focusHandler as ResponsivePointCollector).nameResponse(name) : nameResponse(name);
-              if(namedCb != null){
-                namedCb.call();
-              }else{
-                focusHandler.focusBackAcrossManager();
-              }
-              break;
-            default:
-              nameResponse(name.toString())?.call();
-          }
+          responseCallback(name);
           return true;
         }));
     }

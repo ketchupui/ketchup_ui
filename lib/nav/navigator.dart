@@ -77,6 +77,8 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
   NavCtntPair<PageCache> get currentPair => __currentPair;
   NavigatableList<PageCache> get currentNavPairList => [ ...__currentPair.$1, ...__currentPair.$2 ];
   List<PageCache> get currentCachePages => currentNavPairList.map((cache)=>cache.$3).toList();
+  
+  (int, int, PageCache)? get focusedPageInfo => screen.focusPageCurrentPT != null ? currentNavPairList.where((item)=>item.$3.screenPT?.$1 == screen.focusPageCurrentPT).firstOrNull : null; 
 
   // Map<String, ScreenContext>? get currentVScreenMap {
   //   final ret = {};
@@ -102,7 +104,7 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
   void onMeasured(){
     navDebug('#$hashCode-nav.onMeasured');
     for (var cache in currentCachePages) {
-      cache.page?.onMeasured(screen);
+      cache.page.onMeasured(screen);
     }
   }
 
@@ -119,8 +121,8 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
 
   void currentPagesUnload(){
     for (var cache in currentCachePages) {
-      cache.page?.onPause();
-      cache.page?.onDestroy();
+      cache.page.onPause();
+      cache.page.onDestroy();
     }
   }
 
@@ -190,16 +192,16 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
   
     var willReplacePair = (expand ?  shiftExpand : shift).call(__currentPair, (pageClass, targetColumn, cachePage ?? PageCache.nopathPage(page)));
     for (var rElement in willReplacePair.$2) {
-      rElement.$3.page?.onPause();
+      rElement.$3.page.onPause();
       rElement.$3.screenPT = null;
       final onCreatePath = rElement.$3.onCreatePath;
       if(onCreatePath != null){
         cachePathPages?.update(onCreatePath, (already){
-          already.page?.onDestroy();
+          already.page.onDestroy();
           return rElement.$3;
         }, ifAbsent:()=>rElement.$3);
       }else{
-        rElement.$3.page?.onDestroy();
+        rElement.$3.page.onDestroy();
       }
     }
     __currentPair = willReplacePair.$1;
@@ -214,7 +216,7 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
   }
 
   List<(ScreenPT, Navigatable<PageCache>)> get screenPTCachePageList => mergeScreenPT<Navigatable<PageCache>>(currentScreenPTs!, currentContextPT!, currentNavPairList);
-  
+
   void _pageScreenPTChangeDo(void Function(ScreenPT?, ScreenPT, PageCache) it){
     for (var item in screenPTCachePageList) {
       final oldScreenPT = item.$2.$3.screenPT;
@@ -231,19 +233,17 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
     }
     
     _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
-      cache.page?.onScreenWillChange(newPT);
+      cache.page.onScreenWillChange(newPT);
     });
     
-    /// 此处插入 vscreenMap
+    
     if(animCtrl != null){
       _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
-        final anim = cache.page?.willPlayAnimated(fromPT: oldPT, toPT: newPT, animCtrl: animCtrl);
-        if(anim != null){
-          GroupedAnimationManager.instance.addController('navigator', anim, onGroupMembersCompleted: () {
-            endCall();
-            GroupedAnimationManager.instance.dispose();
-          },);
-        }
+        final anim = cache.page.willPlayAnimated(fromPT: oldPT, toPT: newPT, animCtrl: animCtrl);
+        GroupedAnimationManager.instance.addController('navigator', anim, onGroupMembersCompleted: () {
+          endCall();
+          GroupedAnimationManager.instance.dispose();
+        },);
       });
       /// 统一播放
       GroupedAnimationManager.instance.playGroup('navigator', duration: Duration(seconds: 2));
@@ -255,21 +255,25 @@ abstract class BasicNavigatorBuilder extends NavigatorCore<PageCache>{
       // }
     }
 
-    final Map<String, VScreenFocusPageManager> vscreenMap = {};
-    _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
-      if(cache.page is VScreenFocusRoutePage){
-        final cachePage = cache.page as VScreenFocusRoutePage;
-        if(cachePage.pageScreen != null){
-          vscreenMap.update(newPT.$1, (_) => cachePage.pageScreen as VScreenFocusPageManager, ifAbsent: () => cachePage.pageScreen as VScreenFocusPageManager,);
-        }
-      }
-    });
-    screen.currentPatternVirtualMap = vscreenMap;
+    // final Map<String, VScreenFocusPageManager> vscreenMap = {};
+    // _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
+    //   if(cache.page is VScreenFocusRoutePage){
+    //     final cachePage = cache.page as VScreenFocusRoutePage;
+    //     if(cachePage.pageScreen != null){
+    //       vscreenMap.update(newPT.$1, (_) => cachePage.pageScreen as VScreenFocusPageManager, ifAbsent: () => cachePage.pageScreen as VScreenFocusPageManager,);
+    //     }
+    //   }
+    // });
+    // screen.currentPatternVirtualMap = vscreenMap;
 
     /// 之后不能再调此函数
     _pageScreenPTChangeDo((ScreenPT? oldPT, ScreenPT newPT, PageCache cache){
       cache.screenPT = newPT;
     });
+
+    /// 此处插入 vscreenMap
+    screen.currentPatternVirtualMap = Map.fromEntries(
+      currentNavPairList.where((e) => e.$3.page is VScreenFocusRoutePage).map((Navigatable<PageCache> intent)=>MapEntry(intent.$3.screenPT!.$1, intent.$3.page.pageScreen as VScreenFocusPageManager)));
     
     if(animCtrl == null) endCall();
 

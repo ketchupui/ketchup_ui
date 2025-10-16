@@ -8,8 +8,8 @@ const String PT_COLUMN_TWO = '$PT_COLUMN_ONE,$PT_2';
 const String PT_COLUMN_THREE = '$PT_COLUMN_TWO,$PT_3';
 const String PT_COLUMN_FOUR = '$PT_COLUMN_THREE,$PT_4';
 const String PT_COLUMN_FIVE = '$PT_COLUMN_FOUR,$PT_5';
-const String PT_COLUMN_SIX = '$PT_COLUMN_FOUR,$PT_6';
-const String PT_COLUMN_SEVEN = '$PT_COLUMN_FOUR,$PT_7';
+const String PT_COLUMN_SIX = '$PT_COLUMN_FIVE,$PT_6';
+const String PT_COLUMN_SEVEN = '$PT_COLUMN_SIX,$PT_7';
 
 const String PT_FULL_ONE = '($PT_1)';
 const String PT_FULL_TWO = PT_12;

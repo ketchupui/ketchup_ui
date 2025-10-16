@@ -11,3 +11,4 @@ export 'pxunit.dart';
 export 'remote_focus/remote.dart';
 export 'remote_focus/collector.dart';
 export 'remote_focus/focus_finder.dart';
+export 'type.dart';

@@ -133,6 +133,13 @@ P measureDebug<P>(P object){
     CategoryLogger.dSingle(LogCategory.measure, object.toString());
   }
   return object;
+} 
+
+P focusDebug<P>(P object){
+  if(kDebugMode){
+    CategoryLogger.dSingle(LogCategory.focus, object.toString());
+  }
+  return object;
 }
 
 P gridDebug<P>(P object){

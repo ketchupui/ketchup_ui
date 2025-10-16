@@ -745,4 +745,5 @@ class ScreenContext extends BaseScreenContext with FocusPageManager, VScreenFocu
     if(focusPageCurrentPT != null) return currentSizeRect;
     return super.paintRect(singlePT);
   }
+
 }

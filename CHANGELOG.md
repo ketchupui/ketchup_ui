@@ -1,18 +1,32 @@
+## 1.0.0
+
+* feat: Maximum screen support increased from 5 to 7
+* feat: Tail column expansion mode (TailColumnExpand.left | right | none)
+* feat: Single page display mode support (FocusPageMode.multiLR | singleRL | singleLR)
+* feat: Support for creating VirtualScreenContext and PageNavigator
+* feat: Nested page navigation support (PagePrev/PageNext)
+* feat: New page focus control system (Focus/FocusFinder)
+* feat: Page tracking and remote control support (ResponsivePointCollector/RemoteChannel)
+* refactor: Comprehensive literal unit system (vh, vw, vmin, vmax, rpx, px, wpc, hpc)
+* refactor: Enhanced unit expression system (Expression)
+* refactor: Refactored grid context system (GridContext)
+* demo: Full support for launcher 1.0 demonstration project
+
 ## 0.1.0
 
-* feat: 支持层绘图语境 和 *.cpo.dart 格式动画文件
-* feat: 页面导航器 nav
-* feat: 支持 pixel-cardboard-launcher 大屏游戏商城项目
-* feat: 支持 pixel-assets-kit v0.1.0
-* feat: 支持 simple-gridbased-game-kit v0.1.0
+* feat: Support for LayerContext and *.cpo.dart format animation files
+* feat: Page navigator (nav)
+* feat: Support for pixel-cardboard-launcher large-screen game store project
+* feat: Support for pixel-assets-kit v0.1.0
+* feat: Support for simple-gridbased-game-kit v0.1.0
 
 ## 0.0.2
 
-* feat: 支持网格线语境
-* feat: 屏幕语境对外提供容器
+* feat: Support for GridContext
+* feat: Screen context provides external containers
 
 ## 0.0.1
 
-* 初始提交
-* feat: 支持二、三、四、五联屏语境的预览。
-* feat: 支持交互预设。
+* Initial release
+* feat: Support for previewing 2, 3, 4, and 5-screen contexts (ScreenContext)
+* feat: Support for interaction presets

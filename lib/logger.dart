@@ -15,8 +15,11 @@ enum LogCategory {
   /// context
   screen('SCREEN', LogLevel.debug),
   grid('GRID', LogLevel.debug),
+
+  /// nav-page-focus
   nav('NAV', LogLevel.debug),
   page('PAGE', LogLevel.debug),
+  focus('FOCUS', LogLevel.debug),
   
   /// others
   network('NETWORK', LogLevel.debug),

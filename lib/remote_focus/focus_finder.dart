@@ -24,6 +24,12 @@ mixin FocusFinder on FocusManager{
         return null;
       case FindFocusPosition.brothers:
         return focusFather?.findFocusManager(FindFocusPosition.children);
+      case FindFocusPosition.focusedChild:
+        final focused = focusNav?.focusedPageInfo?.$3.page;
+        if(focused is FocusManager){
+          return [focused!];
+        }
+        return null;
       case FindFocusPosition.children:
         return focusNav?.type<FocusManager>();
       case FindFocusPosition.nextRight:
