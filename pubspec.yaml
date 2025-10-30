@@ -1,6 +1,6 @@
 name: ketchup_ui
 description: "番茄汁UI,基于拼接大屏生态的基础UI库,解决大屏适配问题,另有 *-assets-kit 和 *-game-kit 系列工具解决大屏资源素材 和 大屏游戏交互框架的问题"
-version: 1.0.0-dev.1
+version: 1.0.0-dev.2
 homepage: https://ketchupui.github.io
 repository: https://github.com/ketchupui/ketchup_ui
 

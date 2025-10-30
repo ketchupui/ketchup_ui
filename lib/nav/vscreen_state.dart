@@ -69,7 +69,8 @@ abstract class VScreenFocusRoutePage extends FocusRoutePage with MultiColumns, F
   Rect? get paintRect => pageScreen?.currentSizeRect;
 
   @override
-  ScreenContext? pageScreen;
+  ScreenContext? get pageScreen => _pageScreen;
+  ScreenContext? _pageScreen;
   GlobalKey vscreenKey = GlobalKey();
   GlobalKey innerKetchupKey = GlobalKey();
   VScreenPageState? get vscreenState => vscreenKey.currentState as VScreenPageState?;
@@ -91,7 +92,7 @@ abstract class VScreenFocusRoutePage extends FocusRoutePage with MultiColumns, F
     pageLifecycleDebug('VScreenKetchupRoutePage#$hashCode-onScreenWillChange');
     screenPT = willChangePT;
     if(pageScreen != null) pageScreen!.dispose();
-    pageScreen = ca.screen.createVirtual(willChangePT.$1, createVirtualScreenUseParams(willChangePT));
+    _pageScreen = ca.screen.createVirtual(willChangePT.$1, createVirtualScreenUseParams(willChangePT));
     // pageNav?.adjustScreenColumnChangeWait();
   }
 

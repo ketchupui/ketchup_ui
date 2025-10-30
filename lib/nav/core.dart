@@ -5,8 +5,8 @@ import 'utils.dart';
 typedef Navigatable<T> = (int, int, T);
 typedef NavigatableList<T> = List<Navigatable<T>>;
 typedef NavCtntPair<T> = (NavigatableList<T>, NavigatableList<T>);
-typedef SingleAvbCol = List<int>;
-typedef ExpandAvbPtns = List<double>;
+typedef SinglenNavigatableAvbCols = List<int>;
+typedef AvailabeColPattern = List<int>;
 
 abstract mixin class MultiColumns {
   List<int> get availableColumns;
@@ -39,42 +39,42 @@ abstract class NavigatorCore<T extends MultiColumns> with vConsole {
     // var current = [...navigates, ...contents ];
     // var currentColumnsNum = current.fold<int>(0, (count, item)=>count + item.$2);
 
-    List<SingleAvbCol> navigatesExpandables = indexedExpAvbCols(navigates); 
-    List<SingleAvbCol> contentsExpandables = indexedExpAvbCols(contents);
+    List<SinglenNavigatableAvbCols> navigatesAvbCols = avbColsList(navigates); 
+    List<SinglenNavigatableAvbCols> contentsAvbCols = avbColsList(contents);
     //// 没有任何扩展性 返回原值
-    if(navigatesExpandables.isEmpty && contentsExpandables.isEmpty) return currentPages;
+    if(navigatesAvbCols.isEmpty && contentsAvbCols.isEmpty) return currentPages;
     // var expandColumnsNum = screenColumn - currentColumnsNum;
 
     /// 内容从新到旧
     /// [3,2,1][4,2][3,1] 变成 [3,4,3][3,4,1][3,2,3][3,2,1][2,4,3][2,4,1]...
-    List<ExpandAvbPtns> recursiveCombine(List<SingleAvbCol> r){
+    List<AvailabeColPattern> recursiveCombine(List<SinglenNavigatableAvbCols> r){
       assert(r.isNotEmpty);
       if(r.length == 1) {
         /// 拆包最后一个 SingleAvbCol
-        return r.single.map<ExpandAvbPtns>((int col)=> [ col.toDouble() ] ).toList();
+        return r.single.map<AvailabeColPattern>((int col)=> [ col ] ).toList();
       } else if(r.length > 1){
         /// 拆包第一个 SingleAvbCol
-        SingleAvbCol first = r.first;
-        List<ExpandAvbPtns> rest = recursiveCombine(r..removeAt(0));
-        return first.expand<ExpandAvbPtns>((int putF)=> rest.map<ExpandAvbPtns>((ExpandAvbPtns restPtn)=>[ putF.toDouble(), ...restPtn])).toList();
+        SinglenNavigatableAvbCols first = r.first;
+        List<AvailabeColPattern> rest = recursiveCombine(r..removeAt(0));
+        return first.expand<AvailabeColPattern>((int putF)=> rest.map<AvailabeColPattern>((AvailabeColPattern restPtn)=>[ putF, ...restPtn ])).toList();
       } else {
-        return [<double>[]];
+        return [<int>[]];
       }
     }
 
-    ExpandAvbPtns? target = recursiveCombine([ ...contentsExpandables, ...navigatesExpandables.reversed ]).firstWhereOrNull((ExpandAvbPtns test){
+    AvailabeColPattern? target = recursiveCombine([ ...contentsAvbCols, ...navigatesAvbCols.reversed ]).firstWhereOrNull((AvailabeColPattern test){
       return test.sum <= givenScreenColumn;
     });
     if(target == null) return null;
 
-    var navColumns = target.sublist(contentsExpandables.length).reversed.toList();
-    var ctnColumns = target.sublist(0, contentsExpandables.length);
+    var navColumns = target.sublist(contentsAvbCols.length).reversed.toList();
+    var ctnColumns = target.sublist(0, contentsAvbCols.length);
 
     return (navigates.mapIndexed((i, nav)=>(nav.$1, navColumns[i].toInt(), nav.$3)).toList(), 
             contents.mapIndexed((i, ctn)=>(ctn.$1, ctnColumns[i].toInt(), ctn.$3)).toList());
   }
   
-  List<SingleAvbCol> indexedExpAvbCols(NavigatableList<T> nav) => nav.map((ctn)=>availableColumns(ctn.$3.availableColumns, ctn.$1, ctn.$2)).toList();
+  List<SinglenNavigatableAvbCols> avbColsList(NavigatableList<T> nav) => nav.map((ctn)=>availableColumns(ctn.$3.availableColumns, ctn.$1, ctn.$2)).toList();
 
   String expandString(NavCtntPair<T> currentPages) => expandCollapse(currentPages, screenColumn).toString();
 

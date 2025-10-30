@@ -42,19 +42,19 @@ void main(){
     
     test('NavigatorCore.indexedExpAvbCols', (){
       expect(
-        nt.indexedExpAvbCols([(5, 1, designedBothends6Page),(4, 1, designedBothends6Page)]).toString(),
+        nt.avbColsList([(5, 1, designedBothends6Page),(4, 1, designedBothends6Page)]).toString(),
         '[[1], [1]]'
       );
       expect(
-        nt.indexedExpAvbCols([(5, 1, designedBothends6Page),(4, 2, designedEven5Page)]).toString(),
+        nt.avbColsList([(5, 1, designedBothends6Page),(4, 2, designedEven5Page)]).toString(),
         '[[1], [4, 2]]'
       );
       expect(
-        nt.indexedExpAvbCols([(5, 1, designedOdds4Page),(4, 2, designedBothends2Page)]).toString(),
+        nt.avbColsList([(5, 1, designedOdds4Page),(4, 2, designedBothends2Page)]).toString(),
         '[[4, 3, 1], [2]]'
       );
       expect(
-        nt.indexedExpAvbCols([(5, 1, designedOdds4Page),(4, 2, designedEven5Page)]).toString(),
+        nt.avbColsList([(5, 1, designedOdds4Page),(4, 2, designedEven5Page)]).toString(),
         '[[4, 3, 1], [4, 2]]'
       );
     });

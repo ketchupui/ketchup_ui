@@ -92,7 +92,7 @@ class KetchupUILayout extends StatelessWidget{
   // final Size? singleAspectRatio;
   // final RCPair rowColumn;
   // final TailColumnExpand tailColumnExpand;
-  final double gapspan;
+  // final double gapspan;
   // final RUNMODE mode;
   final ScreenContext screen;
   final GridContext grid;
@@ -106,7 +106,7 @@ class KetchupUILayout extends StatelessWidget{
   final Decoration? bgDecoration;
   const KetchupUILayout({super.key, this.statefulKey, required this.columnsBuilder, this.fgFullBuilder, this.bgFullBuilder, required this.measuredCb,
     // this.singleAspectRatio, 
-    this.gapspan = 0, 
+    // this.gapspan = 0, 
     required this.screen,
     required this.grid,
     required this.fgLayers,
@@ -149,7 +149,7 @@ class KetchupUISized extends StatefulWidget{
   // final RCPair rowColumn;
   // final TailColumnExpand tailColumnExpand;
   final Rect sizeRect;
-  final double gapspan;
+  // final double gapspan;
   // final RUNMODE mode;
   final ScreenContext screen;
   final GridContext grid;
@@ -172,7 +172,8 @@ class KetchupUISized extends StatefulWidget{
     this.bgDecoration,
     // this.tailColumnExpand = TailColumnExpand.none,
     // this.mode = RUNMODE.debug, 
-    this.gapspan = 0, required this.grid, required this.bgLayers,required this.fgLayers });
+    // this.gapspan = 0, 
+    required this.grid, required this.bgLayers,required this.fgLayers });
   
   @override
   State<StatefulWidget> createState() => KetchupUIState();

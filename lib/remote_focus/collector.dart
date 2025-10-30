@@ -118,10 +118,10 @@ mixin SingleRemoteChannelRPC on ResponsivePointCollector implements RemoteChanne
   }
   
   @override
-  /// 把交互点包裹起来做一层远程调用
-  VoidCallback collectPoint(VoidCallback? callback, {String? name, VoidCallback? after, VoidCallback? before}){
+  /// 把交互点包裹起来做一层远程调用 10.28 修复没有透传 null 类型的问题
+  VoidCallback? collectPoint(VoidCallback? callback, {String? name, VoidCallback? after, VoidCallback? before}){
     super.collectPoint(callback, name: name, after: after, before: before);
-    if(isRemoteEnabled){
+    if(isRemoteEnabled && callback != null){
       debouncer.call(
         /// 远程交互
         ()=>remoteChannelSend(channelName, collectResponsivePointNames, (name){
@@ -129,12 +129,16 @@ mixin SingleRemoteChannelRPC on ResponsivePointCollector implements RemoteChanne
           return true;
         }));
     }
-    return (){
-      callback?.call();
-      if(isRemoteEnabled) {
-        remoteChannelClose(channelName);
-      }
-    };
+    if(callback != null){
+      return (){
+        callback();
+        if(isRemoteEnabled) {
+          remoteChannelClose(channelName);
+        }
+      };
+    }else {
+      return null;
+    }
   }
 
   // @override

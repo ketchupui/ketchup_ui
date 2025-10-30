@@ -153,7 +153,7 @@ class GridContext extends BaseContext{
 
   List<List<RectGetter>> createRectGetterMatrix({bool reverseX = false, bool reverseY = false, 
                     // bool looseEqualIgnored = false, double xMinFactor = 0.00001, double yMinFactor = 0.00001,
-                    bool Function(NamedLine later, NamedLine prev)? equalIgnoreCompare,
+                    bool Function(NamedLine more, NamedLine less)? equalIgnoreCompare,
                     List<String> includes = const [], List<String> excludes = const [],required Size sampleSortSize}){
     var vLines = lines(DIRECTION.vertical, includes: includes, excludes: excludes);
     vLines = useSampleWidthSorted(sampleSortSize, vLines);
@@ -168,9 +168,9 @@ class GridContext extends BaseContext{
     return createRectGetterMatrixFromLines(reverseX: reverseX, reverseY: reverseY, vLines: vLines, hLines: hLines, equalIgnoreCompare: equalIgnoreCompare );
   }
 
-  List<List<RectGetter>> createRectGetterMatrixFromLines({bool reverseX = false, bool reverseY = false, 
+  static List<List<RectGetter>> createRectGetterMatrixFromLines({bool reverseX = false, bool reverseY = false, 
                   // bool looseEqualIgnored = false, double xMinFactor = 0.00001, double yMinFactor = 0.00001,
-                  bool Function(NamedLine later, NamedLine prev)? equalIgnoreCompare,
+                  bool Function(NamedLine more, NamedLine less)? equalIgnoreCompare,
                   required List<NamedLine> vLines, required List<NamedLine> hLines}){
     assert(vLines.length >= 2 && hLines.length >= 2);
     List<List<RectGetter>> retColumns = [];
