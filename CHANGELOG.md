@@ -1,3 +1,7 @@
+## 1.0.0-dev.2
+* refactor: rename some variables and definations
+* fix: some hidden bugs
+
 ## 1.0.0-dev.1
 
 * feat: Maximum screen support increased from 5 to 7
