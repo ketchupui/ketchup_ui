@@ -1,3 +1,6 @@
+## 1.0.0
+* 从预览版改成正式版
+
 ## 1.0.0-dev.2
 * refactor: 配合文档更新变量名和定义名
 * fix: 修复方法重载丢失 null 返回类型的问题 VoidCallback? collectPoint(VoidCallback? callback, {String? name, VoidCallback? after, VoidCallback? before});

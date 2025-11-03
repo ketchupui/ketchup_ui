@@ -1,3 +1,6 @@
+## 1.0.0
+* change from dev preview to stable
+
 ## 1.0.0-dev.2
 * refactor: rename some variables and definations
 * fix: some hidden bugs
